@@ -66,3 +66,16 @@ index_prefix <- "data/data_ankur/reference/athal_index"
 system2("hisat2-build", args = c("-p 8", ref_genome, index_prefix))
 ```
 
+```{bash}
+hisat2 -h
+
+```
+```{r}
+#system2(hisat2 -x data/data_ankur/reference/athal_index -U SRR446027_1.fastq )
+#system2("hisat2-build", args = c("-p 8", ref_genome, index_prefix, -x data/data_ankur/reference/athal_index, -U SRR446027_1.fastq ))
+#system2("hisat2-build", args = c("-p 8", ref_genome, index_prefix))
+
+
+system2("hisat2", args = c("-p 8","-x data/data_ankur/reference/athal_index","-U data/data_ankur/raw/SRR446027_1.fastq", "-S data/data_ankur/stdout.bam"))
+```
+
