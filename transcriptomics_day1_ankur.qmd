@@ -40,3 +40,21 @@ file.copy(list.files(fq_path, full.names = TRUE), "data/data_ankur/raw/")
 gunzip data/data_ankur/raw/*.gz
 ```
 
+```{r}
+#library(Rqc)
+raw_files <- list.files("data/data_ankur/raw", pattern = ".fastq", full.names = TRUE)
+qc_res <- rqc(path = "data/data_ankur/raw", pattern = ".fastq", outdir = "reports/reports_ankur/rqc_raw")
+
+```
+
+```{r}
+library(QuasR)
+
+# Filter and output to 'trimmed' folder with new names
+preprocessReads(filename = raw_files,
+                outputFilename = paste0("data/data_ankur/trimmed/", basename(raw_files), ".trimmed.fastq"),
+                truncateEndBases = 3, 
+                minLength = 30)
+```
+
+
