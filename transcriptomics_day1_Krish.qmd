@@ -1,0 +1,8 @@
+---
+title: "transcriptomics_day1_Krish.qmd"
+author: "Krish"
+format: html
+editor: visual
+---
+
+## 
