@@ -1,0 +1,121 @@
+---
+title: "transcriptomics_day1_p1.qmd"
+author: "Kimia"
+format: html
+editor: visual
+toc: true
+---
+
+# **The basics of transcriptomics pt1**
+
+## **Part 1: The Digital Mise-en-Place**
+
+### **The Environment Audit**
+
+```{r}
+#| message: false
+#| warning: false
+
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+
+cran_pkgs <- c("tidyverse", "pheatmap")
+bioc_pkgs <- c("DESeq2", "clusterProfiler", "Rsubread", "systemPipeRdata", "Rqc", "QuasR")
+
+new_pkgs <- c(cran_pkgs, bioc_pkgs)[!(c(cran_pkgs, bioc_pkgs) %in% installed.packages()[,"Package"])]
+if(length(new_pkgs)) BiocManager::install(new_pkgs, update = FALSE)
+
+lapply(c(cran_pkgs, bioc_pkgs), library, character.only = TRUE)
+```
+
+```{bash}
+#| eval: false
+conda install -c bioconda -c samtools hisat2
+```
+
+## **Part 2: Data Acquisition**
+
+### **1. The Reference & Reads**
+
+```{bash}
+#| eval: false
+mkdir -p data/data_kimia/reference data/raw data/trimmed reports
+
+# Download TAIR10.1
+wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/735/GCF_000001735.4_TAIR10.1/GCF_000001735.4_TAIR10.1_genomic.fna.gz -P data/reference/
+wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/735/GCF_000001735.4_TAIR10.1/GCF_000001735.4_TAIR10.1_genomic.gtf.gz -P data/reference/
+gunzip data/reference/*.gz
+```
+
+```{r}
+library(systemPipeRdata)
+fq_path <- systemPipeRdata::pathList()$fastqdir
+file.copy(list.files(fq_path, full.names = TRUE), "data/raw/")
+```
+
+```{bash}
+#| eval: false
+gunzip data/raw/*.gz
+```
+
+## **Part 3: The Theory - Beyond the Blueprint**
+
+## **Part 4: The Practice - R-Based QC and Trimming**
+
+### **Task 1: Generate the QC Report**
+
+```{r}
+#| message: false
+#| warning: false
+
+library(Rqc)
+raw_files <- list.files("data/raw", pattern = ".fastq", full.names = TRUE)
+qc_res <- rqc(path = "data/raw", pattern = ".fastq", outdir = "reports/rqc_raw")
+```
+
+### **Task 2: Strict Filtering with QuasR**
+
+```{r}
+#| message: false
+#| warning: false
+
+library(QuasR)
+
+# Filter and output to 'trimmed' folder with new names
+preprocessReads(filename = raw_files,
+                outputFilename = paste0("data/data_kimia/trimmed_kimia/", basename(raw_files), ".trimmed.fastq"),
+                truncateEndBases = 3, 
+                minLength = 30, 
+                maxN = 1)
+```
+
+## **Part 5: Mapping Strategy - Splicing Matters**
+
+## **Part 6: Building the Index via `system2()`**
+
+```{r}
+#| message: false
+#| warning: false
+
+# Reference and Index paths
+ref_genome <- "data/reference/GCF_000001735.4_TAIR10.1_genomic.fna"
+index_prefix <- "data/reference/athal_index"
+
+# Drive the terminal using R: 8 CPUs for speed
+system2("hisat2-build", args = c("-p 8", ref_genome, index_prefix))
+```
+
+## **Bonus Challenges**
+
+### **Bonus 1: Planning the Map**
+
+```{bash}
+#| eval: false
+hisat2 -h
+
+```
+
+### **Bonus 2: Advanced `system2` Design**
+
+### Reflection
+
+Explain in your own words the difference between a `.bai` index and a HISAT2 index. Why can’t we use a `.bai` to map reads?
