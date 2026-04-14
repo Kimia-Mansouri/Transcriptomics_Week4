@@ -52,3 +52,29 @@ samtool --version
 conda install -c bioconda  hisat2
 conda install -c bioconda  samtools
 ```
+
+# **Part 2: Data Acquisition**
+
+### **1. The Reference & Reads**
+
+```{bash}
+mkdir -p data/Data_Krish/reference data/Data_Krish/raw data/Data_Krish/trimmed reports
+
+# Download TAIR10.1
+wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/735/GCF_000001735.4_TAIR10.1/GCF_000001735.4_TAIR10.1_genomic.fna.gz -P data/Data_Krish/reference/
+wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/735/GCF_000001735.4_TAIR10.1/GCF_000001735.4_TAIR10.1_genomic.gtf.gz -P data/Data_Krish/reference/
+
+
+gunzip data/Data_Krish/reference/*.gz
+```
+
+```{r}
+
+library(systemPipeRdata)
+fq_path <- systemPipeRdata::pathList()$fastqdir
+file.copy(list.files(fq_path, full.names = TRUE), "data/Data_Krish/raw/")
+```
+
+```{bash}
+gunzip data/Data_Krish/raw/*.gz
+```
