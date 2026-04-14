@@ -18,18 +18,31 @@ toc: true
 
 if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
 
+lapply(c(cran_pkgs, bioc_pkgs), library, character.only = TRUE)
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| eval: false
 cran_pkgs <- c("tidyverse", "pheatmap")
 bioc_pkgs <- c("DESeq2", "clusterProfiler", "Rsubread", "systemPipeRdata", "Rqc", "QuasR")
-
 new_pkgs <- c(cran_pkgs, bioc_pkgs)[!(c(cran_pkgs, bioc_pkgs) %in% installed.packages()[,"Package"])]
 if(length(new_pkgs)) BiocManager::install(new_pkgs, update = FALSE)
+```
 
+```{r}
+#| message: false
+#| warning: false
 lapply(c(cran_pkgs, bioc_pkgs), library, character.only = TRUE)
 ```
 
 ```{bash}
 #| eval: false
-conda install -c bioconda -c samtools hisat2
+conda install -c bioconda samtools hisat2
+
+hisat2 --vesrion
+samtools --version
 ```
 
 ## **Part 2: Data Acquisition**
