@@ -78,3 +78,52 @@ file.copy(list.files(fq_path, full.names = TRUE), "data/Data_Krish/raw/")
 ```{bash}
 gunzip data/Data_Krish/raw/*.gz
 ```
+
+# **Part 4: The Practice - R-Based QC and Trimming**
+
+### **Task 1: Generate the QC Report**
+
+```{r}
+library(Rqc)
+raw_files <- list.files("data/Data_Krish/raw", pattern = ".fastq", full.names = TRUE)
+qc_res <- rqc(path = "data/Data_Krish/raw", pattern = ".fastq", outdir = "reports/Reports_Krish/rqc_raw")
+```
+
+### **Task 2: Strict Filtering with QuasR**
+
+```{r}
+library(QuasR)
+
+# Filter and output to 'trimmed' folder with new names
+preprocessReads(filename = raw_files,
+                outputFilename = paste0("data/Data_Krish/trimmed/", basename(raw_files), ".trimmed.fastq"),
+                truncateEndBases = 3, 
+                minLength = 30)
+```
+
+# **Part 6: Building the Index via `system2()`**
+
+```{r}
+# Reference and Index paths
+ref_genome <- "data/Data_Krish/reference/GCF_000001735.4_TAIR10.1_genomic.fna"
+index_prefix <- "data/Data_Krish/reference/athal_index"
+
+# Drive the terminal using R: 8 CPUs for speed
+system2("hisat2-build", args = c("-p 8", ref_genome, index_prefix))
+```
+
+# **Bonus Challenges**
+
+### **Bonus 1: Planning the Map**
+
+```{bash}
+hisat2 -h
+
+hisat2 -x /data/Data_Krish/refrence/athal_index -U /data/Data_Krish/trimmed/SRR446044_2.fastq.trimmed.fastq -p 1  -S data/Data_Krish/alignment/SRR446044_2.fastq.trimmed.fastq.bam
+```
+
+### **Bonus 2: Advanced `system2` Design**
+
+```{r}
+system2("hisat2" , args = c("-x data/Data_Krish/reference/athal_index",  "-U data/Data_Krish/trimmed/SRR446044_2.fastq.trimmed.fastq" , "-p 8", "-S data/Data_Krish/alignment/SRR446044_2.fastq.trimmed.fastq.bam"))
+```
