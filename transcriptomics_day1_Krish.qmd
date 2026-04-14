@@ -5,4 +5,50 @@ format: html
 editor: visual
 ---
 
-## 
+### **2. The Environment Audit**
+
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+
+cran_pkgs <- c("tidyverse", "pheatmap")
+bioc_pkgs <- c("DESeq2", "clusterProfiler", "Rsubread", "systemPipeRdata", "Rqc", "QuasR")
+
+new_pkgs <- c(cran_pkgs, bioc_pkgs)[!(c(cran_pkgs, bioc_pkgs) %in% installed.packages()[,"Package"])]
+if(length(new_pkgs)) BiocManager::install(new_pkgs, update = FALSE)
+
+lapply(c(cran_pkgs, bioc_pkgs), library, character.only = TRUE)
+```
+
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+
+cran_pkgs <- c("tidyverse", "pheatmap")
+bioc_pkgs <- c("DESeq2", "clusterProfiler", "Rsubread", "systemPipeRdata", "Rqc", "QuasR")
+
+
+
+```
+
+```{r}
+#| eval: false
+new_pkgs <- c(cran_pkgs, bioc_pkgs)[!(c(cran_pkgs, bioc_pkgs) %in% installed.packages()[,"Package"])]
+if(length(new_pkgs)) BiocManager::install(new_pkgs, update = FALSE)
+```
+
+```{r}
+#| warning: false
+#| message: false
+
+lapply(c(cran_pkgs, bioc_pkgs), library, character.only = TRUE)
+```
+
+Check that `samtools` and `hisat2` are installed in your base environment.
+
+```{bash}
+hisat2 --vesrion
+samtool --version
+
+# if not instaled  install them
+conda install -c bioconda  hisat2
+conda install -c bioconda  samtools
+```
