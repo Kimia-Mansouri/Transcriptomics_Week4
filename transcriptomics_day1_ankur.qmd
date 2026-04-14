@@ -58,6 +58,11 @@ preprocessReads(filename = raw_files,
 ```
 
 ```{r}
+# Reference and Index paths
+ref_genome <- "data/data_ankur/reference/GCF_000001735.4_TAIR10.1_genomic.fna"
+index_prefix <- "data/data_ankur/reference/athal_index"
 
+# Drive the terminal using R: 8 CPUs for speed
+system2("hisat2-build", args = c("-p 8", ref_genome, index_prefix))
 ```
 
