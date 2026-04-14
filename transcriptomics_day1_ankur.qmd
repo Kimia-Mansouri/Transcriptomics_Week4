@@ -3,3 +3,22 @@ title: "transcriptomics_day1_ankur"
 format: html
 ---
 
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+
+cran_pkgs <- c("tidyverse", "pheatmap")
+bioc_pkgs <- c("DESeq2", "clusterProfiler", "Rsubread", "systemPipeRdata", "Rqc", "QuasR")
+```
+
+```{r}
+#| eval: false
+new_pkgs <- c(cran_pkgs, bioc_pkgs)[!(c(cran_pkgs, bioc_pkgs) %in% installed.packages()[,"Package"])]
+if(length(new_pkgs)) BiocManager::install(new_pkgs, update = FALSE)
+
+```
+
+```{r}
+
+lapply(c(cran_pkgs, bioc_pkgs), library, character.only = TRUE)
+```
+
