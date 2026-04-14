@@ -22,7 +22,12 @@ if(length(new_pkgs)) BiocManager::install(new_pkgs, update = FALSE)
 lapply(c(cran_pkgs, bioc_pkgs), library, character.only = TRUE)
 ```
 
-```{r}
+```{bash}
+mkdir -p data/data_ankur/reference data/raw data/trimmed reports
 
+# Download TAIR10.1
+wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/735/GCF_000001735.4_TAIR10.1/GCF_000001735.4_TAIR10.1_genomic.fna.gz -P data/data_ankur/reference/
+wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/735/GCF_000001735.4_TAIR10.1/GCF_000001735.4_TAIR10.1_genomic.gtf.gz -P data/data_ankur/reference/
+gunzip data/data_ankur/reference/*.gz
 ```
 
