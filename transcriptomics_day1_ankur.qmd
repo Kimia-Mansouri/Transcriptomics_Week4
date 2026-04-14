@@ -30,6 +30,7 @@ wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/735/GCF_000001735.
 wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/735/GCF_000001735.4_TAIR10.1/GCF_000001735.4_TAIR10.1_genomic.gtf.gz -P data/data_ankur/reference/
 gunzip data/data_ankur/reference/*.gz
 ```
+
 ```{r}
 library(systemPipeRdata)
 fq_path <- systemPipeRdata::pathList()$fastqdir
@@ -70,6 +71,7 @@ system2("hisat2-build", args = c("-p 8", ref_genome, index_prefix))
 hisat2 -h
 
 ```
+
 ```{r}
 #system2(hisat2 -x data/data_ankur/reference/athal_index -U SRR446027_1.fastq )
 #system2("hisat2-build", args = c("-p 8", ref_genome, index_prefix, -x data/data_ankur/reference/athal_index, -U SRR446027_1.fastq ))
@@ -79,3 +81,6 @@ hisat2 -h
 system2("hisat2", args = c("-p 8","-x data/data_ankur/reference/athal_index","-U data/data_ankur/raw/SRR446027_1.fastq", "-S data/data_ankur/stdout.bam"))
 ```
 
+## Reflection
+
+A **.bai file** (BAM Index) and a **HISAT2 index** serve entirely different purposes in the bioinformatics pipeline, with **the former being used for accessing already-mapped data and the latter being essential for performing the mapping process itself**.
