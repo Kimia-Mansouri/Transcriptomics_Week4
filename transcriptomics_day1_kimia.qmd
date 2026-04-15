@@ -39,8 +39,10 @@ lapply(c(cran_pkgs, bioc_pkgs), library, character.only = TRUE)
 
 ```{bash}
 #| eval: false
+# Install samtools & hisat2
 conda install -c bioconda samtools hisat2
 
+#Verify
 hisat2 --vesrion
 samtools --version
 ```
@@ -51,67 +53,104 @@ samtools --version
 
 ```{bash}
 #| eval: false
-mkdir -p data/data_kimia/reference data/raw data/trimmed reports
+mkdir -p data_kimia/reference data_kimia/raw data_kimia/trimmed
 
 # Download TAIR10.1
-wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/735/GCF_000001735.4_TAIR10.1/GCF_000001735.4_TAIR10.1_genomic.fna.gz -P data/reference/
-wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/735/GCF_000001735.4_TAIR10.1/GCF_000001735.4_TAIR10.1_genomic.gtf.gz -P data/reference/
-gunzip data/reference/*.gz
+wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/735/GCF_000001735.4_TAIR10.1/GCF_000001735.4_TAIR10.1_genomic.fna.gz -P data_kimia/reference/
+wget -nc https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/735/GCF_000001735.4_TAIR10.1/GCF_000001735.4_TAIR10.1_genomic.gtf.gz -P data_kimia/reference/
+gunzip data_kimia/reference/*.gz
 ```
 
 ```{r}
+#| message: false
 library(systemPipeRdata)
 fq_path <- systemPipeRdata::pathList()$fastqdir
-file.copy(list.files(fq_path, full.names = TRUE), "data/raw/")
+file.copy(list.files(fq_path, full.names = TRUE), "data/data_kimia/raw/")
 ```
 
 ```{bash}
 #| eval: false
-gunzip data/raw/*.gz
+gunzip data_kimia/raw/*.gz
 ```
 
 ## **Part 3: The Theory - Beyond the Blueprint**
+
+### **Birds-Eye View Workflow**
+
+Bioinformatics is modular. You have already mastered many of these steps; today we just change the context:
+
+1.  **Read QC:** (Reinforcing Week 2) Assessing and filtering data using `Rqc`.
+
+2.  **Genome Indexing & Mapping:** (New Tool: HISAT2) Aligning RNA reads to a DNA reference.
+
+3.  **Counting:** Using the GTF “map” to count reads per gene. Genes that are expressed more have reads associated with them. Similar to GFF.
+
+4.  **Normalizing Counts:** Adjusting for sequencing depth to ensure fair comparisons. If gene x \> gene y, more transcripts and more genes mapping to it. More of the gene to map. The fact that it contains more fragments does not mean it is expressed more. So the gene size is adjusted using a ratio (normalize it to the size).
+
+5.  **DGE Analysis:** Statistical testing to find genes that are “significantly” different. Exactly which genes are deferentially expressed? How the samples are different from each other and how genes are different from each other.
+
+6.  **Gene Ontology:** (Reinforcing Week 3) Grouping significant genes by biological function.
+
+### Experiment Setup
+
+| Treatment Group | Type | Time Points (h) | Replicates per Time | Total Samples | Focus |
+|----|----|----|----|----|----|
+| **Mock** | Control | 1, 6, 12 | 2 | 6 | Baseline stress response. |
+| **Virulent (Pst)** | Susceptible | 1, 6, 12 | 2 | 6 | Successful infection/Immune suppression. |
+| **Avirulent (avrRps4)** | Resistant | 1, 6, 12 | 2 | 6 | Effector-Triggered Immunity (ETI). |
+
+Note: Number of samples = number of fastq files.
+
+**Why is this sampling scheme important?**
+
+1.  **Temporal Dynamics:** Some defense genes turn on in minutes (1h), while the “Hypersensitive Response” (cell death) peaks much later (12h). A single timepoint would miss half the story.
+
+2.  **Replication:** Biology is messy. Having duplicates for every timepoint allows us to calculate **statistical variance**. Without it, we can’t tell if a change is due to the bacteria or just a “weird” plant.
+
+3.  **Comparative Power:** By comparing Avirulent vs. Virulent across time, we can pinpoint exactly when the plant “recognizes” the intruder and switches from general defense to specific resistance.
 
 ## **Part 4: The Practice - R-Based QC and Trimming**
 
 ### **Task 1: Generate the QC Report**
 
 ```{r}
-#| message: false
-#| warning: false
+
 
 library(Rqc)
-raw_files <- list.files("data/raw", pattern = ".fastq", full.names = TRUE)
-qc_res <- rqc(path = "data/raw", pattern = ".fastq", outdir = "reports/rqc_raw")
+raw_files <- list.files("data/data_kimia/raw", pattern = ".fastq", full.names = TRUE)
+qc_res <- rqc(path = "data/data_kimia/raw", pattern = ".fastq", outdir = "reports/reports_kimia/rqc_raw")
 ```
 
 ### **Task 2: Strict Filtering with QuasR**
 
 ```{r}
-#| message: false
 #| warning: false
 
 library(QuasR)
 
 # Filter and output to 'trimmed' folder with new names
 preprocessReads(filename = raw_files,
-                outputFilename = paste0("data/data_kimia/trimmed_kimia/", basename(raw_files), ".trimmed.fastq"),
+                outputFilename = paste0("data/data_kimia/trimmed/", basename(raw_files), ".trimmed.fastq"),
                 truncateEndBases = 3, 
-                minLength = 30, 
-                maxN = 1)
+                minLength = 30
+                )
 ```
 
 ## **Part 5: Mapping Strategy - Splicing Matters**
 
+Align with the genome. We are not using minimap2 because our mRNA have these introns spliced out, and it would treat the exon-exon gap as insertion/deletion.
+
+And Bowtie2 is not splice-aware and would scrape the gaps unlike Hisat2, designed to recognize these splice sites and it is not penalizing the gaps. Output is a SAM file which we would use to quanitfy gene expression.
+
 ## **Part 6: Building the Index via `system2()`**
 
+A `.bai` file is a “bookmark” for an existing BAM file. A **HISAT2 Index** is like the **Alphabetical Index** at the back of a book. It allows the aligner to find exactly where a sequence belongs without reading the whole genome.
+
 ```{r}
-#| message: false
-#| warning: false
 
 # Reference and Index paths
-ref_genome <- "data/reference/GCF_000001735.4_TAIR10.1_genomic.fna"
-index_prefix <- "data/reference/athal_index"
+ref_genome <- "data/data_kimia/reference/GCF_000001735.4_TAIR10.1_genomic.fna"
+index_prefix <- "data/data_kimia/reference/athal_index"
 
 # Drive the terminal using R: 8 CPUs for speed
 system2("hisat2-build", args = c("-p 8", ref_genome, index_prefix))
@@ -125,10 +164,17 @@ system2("hisat2-build", args = c("-p 8", ref_genome, index_prefix))
 #| eval: false
 hisat2 -h
 
+hisat2 -x data/data_kimia/reference/athal_index -U data/data_kimia/trimmed/SRR446027_1.fastq.trimmed.fastq -p 8 -S data/data_kimia/alignments/bamfiles/SRR446027_1_mapped.bam
 ```
 
 ### **Bonus 2: Advanced `system2` Design**
 
+```{r}
+system2("hisat2", args = c ("-p 8", "-x data/data_kimia/reference/athal_index", "-U data/data_kimia/trimmed/SRR446027_1.fastq.trimmed.fastq", "-S data/data_kimia/alignments/bamfiles/SRR446027_1_mapped.bam"))
+```
+
 ### Reflection
 
 Explain in your own words the difference between a `.bai` index and a HISAT2 index. Why can’t we use a `.bai` to map reads?
+
+.bai index, indexes a sequence for visualization, while HISAT2 indexes against a genome reference. a **.bai file indexes aligned reads (BAM file)** for visualization and random access, while a **HISAT2 index (multiple .ht2 files) indexes a reference genome**for aligning raw sequencing reads
