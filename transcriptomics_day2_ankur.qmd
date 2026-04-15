@@ -23,8 +23,10 @@ meta_data <- read.table(
 ### Inspecting the Structure
 
 ```{r}
-glimpse(meta_data)
-head(meta_data)
+glip <- glimpse(meta_data)
+hea <- head(meta_data)
 ```
-
+```{r}
+datatable(meta_data) 
+```
 
