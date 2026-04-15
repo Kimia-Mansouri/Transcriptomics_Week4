@@ -202,4 +202,10 @@ colnames(raw_counts) <- colnames(raw_counts) %>%
 all(colnames(raw_counts) %in% my_targets$SampleName)
 ```
 
-# 
+### **Task 4: Exporting your Data**
+
+```{r}
+write.csv(raw_counts, "data/Virulent_Avirulent_Counts.csv", row.names = TRUE)
+```
+
+### 
