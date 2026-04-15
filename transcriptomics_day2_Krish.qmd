@@ -1,9 +1,22 @@
 ---
-title: "transcriptomics_day2_ankur"
+title: "transcriptomics_day2_Krish.qmd"
+author: "Krish Desai"
 format: html
+editor: visual
 ---
 
+# **Part 1: Environmental Check & Collaboration**
+
+### **1. Activation & R Libraries**
+
+```{bash}
+conda activate
+```
+
+Load the necessary R libraries for today if you restarted your R session from Day 1.
+
 ```{r}
+#| echo: false
 library(tidyverse)
 library(systemPipeRdata)
 library(DT) # For interactive tables
@@ -11,7 +24,9 @@ library(Rsubread)
 library(stringr)
 ```
 
-### Loading the Data
+# **Part 2: The Metadata Architecture**
+
+### **1. Loading the Data**
 
 ```{r}
 # Load the master metadata table provided by systemPipeRdata
@@ -20,15 +35,17 @@ meta_data <- read.table(
   header = TRUE, sep = "\t")
 ```
 
-### Inspecting the Structure
+### **2. Inspecting the Structure**
 
 ```{r}
-glip <- glimpse(meta_data)
-hea <- head(meta_data)
+head(meta_data)
+glimpse(meta_data)
+
+datatable(meta_data)
 ```
-```{r}
-datatable(meta_data) 
-```
+
+### **3. The Wrangling Challenge**
+
 ```{r}
 # Create a clean 'Type' column based on patterns in SampleLong
 # case_when allows us to create multiple conditions in a single step
@@ -39,32 +56,25 @@ meta_data <- meta_data %>%
     grepl("Avr", SampleLong) ~ "Avirulent",
     grepl("Vir", SampleLong) ~ "Virulent"
   ))
-```
 
-```{r}
-meta_data |>
-select(SampleName, SampleLong, Type) |> 
+meta_data|>
+  select(SampleName, SampleLong, Type )|>
   head()
+
 ```
+
+### **4. The Filter Challenge**
 
 ```{r}
-# Filtering
-my_targets <- meta_data |>
-  filter(Type %in% c("Mock", "Avirulent"))
+my_targets <- meta_data %>%
+  filter(Type %in% c("Virulent", "Avirulent"))
 
+print(my_targets$SampleName)
 ```
 
-```{r}
-#Sanity Check
-my_targets |>
-  select(SampleName) |>
-  head()
-```
+# **Part 3: The Pipeline Architecture**
 
-### Part 3: The Pipeline Architecture
-
-### Pre-requsite 
-
+### **1. Driving the Terminal with `system2()`**
 
 ```{r}
 # Example 1: List files in your current directory with multiple flags
@@ -76,19 +86,10 @@ system2("date")
 # Practical Question: Write a system2 call to check the version of samtools (--version)
 # Write this in your .qmd
 
-system2("samtools", args = "--version")
+system2("samtools", args = c("--version"))
 ```
 
-
-```{r}
-# The Collection: A basket of fruits
-fruits <- c("Apple", "Banana", "Cherry")
-
-# The Loop: 
-for (f in fruits) {
-  print(paste("I like", f))
-}
-```
+### **2. The Anatomy of a `for` loop**
 
 ```{r}
 # The Collection: A sequence of numbers from 1 to the number of rows
@@ -99,34 +100,24 @@ for (i in 1:nrow(my_targets)) {
   # 2. Look up the SampleName for row 'i' and print it
   print(my_targets$SampleName[i])
   
+  s_name <- my_targets$SampleName
+  
+  print(s_name)
 }
 ```
 
-```{r}
-# The Collection: A sequence of numbers from 1 to the number of rows
-for (i in 1:nrow(my_targets)) {
-  # 1. Print the current value of the iterator i (the row number)
-  print(paste("Currently processing row number:", i))
-  
-  # 2. Look up the SampleName for row 'i' and print it
-  s_name <- print(my_targets$SampleName[i])
-  
-}
-```
-
+### **3. Building Paths with `paste0()` and `basename()`**
 
 ```{r}
 for (i in 1:nrow(my_targets)) {
-  print(paste0("/data/data_ankur/trimmed/", str_remove(basename(my_targets$FileName1[i]),"gz"), "trimmed.fastq"))
-  
+  print(paste0("data/Data_Krish/trimmed/", str_remove(basename(my_targets$FileName1[i]), "gz"), "trimmed.fastq"))
 }
 ```
 
-### Pipeline
+### **4. Putting it Together: The Alignment Loop**
 
 ```{r}
-dir.create("data/data_ankur/alignments", showWarnings = FALSE)
-index_prefix <- "data/data_ankur/reference/athal_index"
+index_prefix <- "data/Data_Krish/reference/athal_index"
 
 for (i in 1:nrow(my_targets)) {
   
@@ -135,26 +126,26 @@ for (i in 1:nrow(my_targets)) {
   
   # Step 2: Define path to input file and assign it to input_fq
   # YOUR TASK: Use the basename() and paste0() logic you practiced in Step 3!
-  
-  input_fq <- paste0("data/data_ankur/trimmed/", str_remove(basename(my_targets$FileName1[i]),"gz"), "trimmed.fastq")
-  
-
-  
+    input_fq <- paste0("data/Data_Krish/trimmed/", str_remove(basename(my_targets$FileName1[i]), "gz"), "trimmed.fastq")
+    
   # Step 3: Given Paths to sam and bam output files
-  sam_out  <- paste0("data/data_ankur/alignments/", s_name, ".sam")
-  bam_out  <- paste0("data/data_ankur/alignments/", s_name, ".sorted.bam")
+  sam_out  <- paste0("data/Data_Krish/alignment/", s_name, ".sam")
+  bam_out  <- paste0("data/Data_Krish/alignment/", s_name, ".sorted.bam")
   
   # Step 4: RUN HISAT2 (Alignment)
   # Pay attention to args: -p 8, -x [index], -U [input], -S [output]
   print(paste("Mapping:", s_name))
   # system2("hisat2", args = c(...))
-  system2("hisat2", args = c("-p 8","-x", index_prefix,"-U", input_fq, "-S", sam_out))
+  system2("hisat2" , args = c("-x" , index_prefix,  "-U", input_fq, "-p 8", "-S", sam_out))
   
   # Step 5: RUN Samtools sort (Compression and ordering)
   # Pay attention to args: sort, -@ 8, -o [output_bam], [input_sam]
   print(paste("Sorting:", s_name))
   # system2("samtools", args = c(...))
-  system2("samtools", args = c("sort", "-o", bam_out, sam_out))
+  system2("samtools", args = c("sort", "-@ 8", "-o", bam_out, sam_out ))
+  
+  
+  
   
   # Step 6: Index the bam file (Fast retrieval)
   # Pay attention to args: index, [input_bam]
@@ -164,19 +155,24 @@ for (i in 1:nrow(my_targets)) {
   # Step 7: DELETE THE SAM (Space management!)
   file.remove(sam_out)
 }
+```
 
-```
+### **5. Verification & Summary**
+
 ```{bash}
-du -h data/data_ankur/alignments/*.bam
+du -h data/Data_Krish/alignment/*.bam
 ```
-### Running the Counts
+
+# **Part 4: Generating the Count Matrix**
+
+### **2. Task: Running the Counts**
 
 ```{r}
 # 1. Gather your BAM files
-my_bams <- list.files("data/data_ankur/alignments", pattern = "\\.sorted\\.bam$", full.names = TRUE)
+my_bams <- list.files("data/Data_Krish/alignment", pattern = "\\.sorted\\.bam$", full.names = TRUE)
 
 # 2. Reference the GTF structural map
-gtf_file <- "data/data_ankur/reference/GCF_000001735.4_TAIR10.1_genomic.gtf"
+gtf_file <- "data/data_Krish/reference/GCF_000001735.4_TAIR10.1_genomic.gtf"
 
 # 3. Generate the counts
 fc_results <- featureCounts(files = my_bams,
@@ -188,20 +184,28 @@ fc_results <- featureCounts(files = my_bams,
 
 # 4. Extract the raw count matrix
 raw_counts <- fc_results$counts
+
+datatable(raw_counts)
 ```
 
-## Data Harmonization
+# **Part 5: Data Harmonization**
+
+### **Task 3: The Tidyverse Cleanup**
 
 ```{r}
 # Clean the names by removing file paths and extensions using stringr
 colnames(raw_counts) <- colnames(raw_counts) %>%
   str_remove("data.alignments.") %>%
   str_remove(".sorted.bam")
-```
 
-
-```{r}
 # THE SANITY CHECK: This MUST return TRUE.
 all(colnames(raw_counts) %in% my_targets$SampleName)
 ```
 
+### **Task 4: Exporting your Data**
+
+```{r}
+write.csv(raw_counts, "data/Virulent_Avirulent_Counts.csv", row.names = TRUE)
+```
+
+### 
