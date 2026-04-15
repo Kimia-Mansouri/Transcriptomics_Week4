@@ -205,3 +205,13 @@ colnames(raw_counts) <- colnames(raw_counts) %>%
 all(colnames(raw_counts) %in% my_targets$SampleName)
 ```
 
+```{r}
+write.csv(raw_counts, "data/mock_vs_avr.csv", row.names = TRUE)
+```
+
+
+## Reflection: 
+
+1. we delete sam in the end of loop to save disk space 
+
+2. While the aligner (e.g., STAR, HISAT2) determines where a read maps on the genome, the GTF (Gene Transfer Format) file provides the annotated, hierarchical structure of the transcriptome that the aligner does not inherently know.
