@@ -94,7 +94,7 @@ Bioinformatics is modular. You have already mastered many of these steps; today 
 ### Experiment Setup
 
 | Treatment Group | Type | Time Points (h) | Replicates per Time | Total Samples | Focus |
-|----|----|----|----|----|----|
+|------------|------------|------------|------------|------------|------------|
 | **Mock** | Control | 1, 6, 12 | 2 | 6 | Baseline stress response. |
 | **Virulent (Pst)** | Susceptible | 1, 6, 12 | 2 | 6 | Successful infection/Immune suppression. |
 | **Avirulent (avrRps4)** | Resistant | 1, 6, 12 | 2 | 6 | Effector-Triggered Immunity (ETI). |
@@ -177,4 +177,4 @@ system2("hisat2", args = c ("-p 8", "-x data/data_kimia/reference/athal_index", 
 
 Explain in your own words the difference between a `.bai` index and a HISAT2 index. Why can’t we use a `.bai` to map reads?
 
-.bai index, indexes a sequence for visualization, while HISAT2 indexes against a genome reference. a **.bai file indexes aligned reads (BAM file)** for visualization and random access, while a **HISAT2 index (multiple .ht2 files) indexes a reference genome**for aligning raw sequencing reads
+.bai index, indexes a sequence for visualization, while HISAT2 indexes against a genome reference. a **.bai file indexes aligned reads (BAM file)** for visualization and random access, while a **HISAT2 index (multiple .ht2 files) indexes a reference genome** for aligning raw sequencing reads
