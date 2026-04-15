@@ -166,4 +166,42 @@ for (i in 1:nrow(my_targets)) {
 }
 
 ```
+```{bash}
+du -h data/data_ankur/alignments/*.bam
+```
+### Running the Counts
+
+```{r}
+# 1. Gather your BAM files
+my_bams <- list.files("data/data_ankur/alignments", pattern = "\\.sorted\\.bam$", full.names = TRUE)
+
+# 2. Reference the GTF structural map
+gtf_file <- "data/data_ankur/reference/GCF_000001735.4_TAIR10.1_genomic.gtf"
+
+# 3. Generate the counts
+fc_results <- featureCounts(files = my_bams,
+                            annot.ext = gtf_file,
+                            isGTFAnnotationFile = TRUE,
+                            GTF.featureType = "exon",
+                            GTF.attrType = "gene_id",
+                            nthreads = 8)
+
+# 4. Extract the raw count matrix
+raw_counts <- fc_results$counts
+```
+
+## Data Harmonization
+
+```{r}
+# Clean the names by removing file paths and extensions using stringr
+colnames(raw_counts) <- colnames(raw_counts) %>%
+  str_remove("data.alignments.") %>%
+  str_remove(".sorted.bam")
+```
+
+
+```{r}
+# THE SANITY CHECK: This MUST return TRUE.
+all(colnames(raw_counts) %in% my_targets$SampleName)
+```
 
