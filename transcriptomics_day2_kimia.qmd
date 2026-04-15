@@ -1,0 +1,268 @@
+---
+title: "transcriptomics_day2_kimia"
+author: "Kimia"
+format: html
+editor: visual
+toc: true
+---
+
+# **The basics of transcriptomics pt2**
+
+Counting how many reads are mapped, the more reads mapped the more they are.
+
+## **Part 1: Environmental Check & Collaboration**
+
+### **1. Activation & R Libraries**
+
+```{bash}
+#| eval: false
+conda activate
+```
+
+```{r}
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(systemPipeRdata)
+library(DT) # For interactive tables
+library(Rsubread)
+library(stringr)
+```
+
+### **2. Git Collaboration**
+
+## **Part 2: The Metadata Architecture**
+
+### **1. Loading the Data**
+
+```{r}
+# Load the master metadata table provided by systemPipeRdata
+meta_data <- read.table(
+  system.file("extdata/param/targetsPE.txt", package = "systemPipeRdata"), 
+  header = TRUE, sep = "\t")
+```
+
+### **2. Inspecting the Structure**
+
+```{r}
+glimpse(meta_data)
+datatable(meta_data)
+```
+
+### **3. The Wrangling Challenge**
+
+```{r}
+# Create a clean 'Type' column based on patterns in SampleLong
+# case_when allows us to create multiple conditions in a single step
+# grepl returns TRUE if the pattern (e.g., "Mock") is found in the string
+meta_data <- meta_data %>% 
+  mutate(Type = case_when(
+    grepl("Mock", SampleLong) ~ "Mock",
+    grepl("Avr", SampleLong) ~ "Avirulent",
+    grepl("Vir", SampleLong) ~ "Virulent"
+  ))
+```
+
+```{r}
+meta_data |>
+  select(SampleName, SampleLong, Type) |>
+  head()
+```
+
+### **4. The Filter Challenge**
+
+-   **Partner 1:** You are responsible for **Mock** and **Virulent**.
+
+```{r}
+my_targets <- meta_data %>%
+  filter(Type %in% c("Mock", "Virulent"))
+```
+
+```{r}
+print(my_targets$SampleName)
+```
+
+## **Part 3: The Pipeline Architecture**
+
+### **1. Driving the Terminal with `system2()`**
+
+The `system2()` function is R’s way of sending a command to your computer’s terminal.
+
+**Anatomy of `system2("command", args = "...")`:**
+
+1.  **The Command:** The name of the software (e.g., `"ls"`, `"hisat2"`, `"samtools"`).
+
+2.  **Args:** A character vector of flags and files you would usually type in the terminal. If you need to provide multiple arguments, you must combine them into a single character vector using the `c()` function (e.g., `args = c("-l", "-h")`).
+
+**Try it yourself:** Run these examples in your console to see how R communicates with your OS.
+
+```{r}
+# Example 1: List files in your current directory with multiple flags
+system2("ls", args = c("-F", "-a"))
+
+# Example 2: Check the current date/time from the system clock
+system2("date")
+```
+
+```{r}
+# Practical Question: Write a system2 call to check the version of samtools (--version)
+# Write this in your .qmd
+system2("samtools", args = "--version")
+```
+
+### **2. The Anatomy of a `for` loop**
+
+```{r}
+# The Collection: A sequence of numbers from 1 to the number of rows
+for (i in 1:nrow(my_targets)) {
+  # 1. Print the current value of the iterator i (the row number)
+  print(paste("Currently processing row number:", i))
+  
+  # 2. Look up the SampleName for row 'i' and print it
+  print(my_targets$SampleName[i])
+}
+```
+
+```{r}
+
+for (i in 1:nrow(my_targets)) {
+  print(paste("Currently processing row number:", i))
+
+    s_name <- my_targets$SampleName[i]
+    print(s_name)
+}
+```
+
+### **3. Building Paths with `paste0()` and `basename()`**
+
+```{r}
+for (i in 1:nrow(my_targets)) {
+ print(paste0("data/data_kimia/trimmed/", str_remove(basename(my_targets$FileName1[i]), "gz"), "trimmed.fastq"))
+}
+```
+
+### **4. Putting it Together: The Alignment Loop**
+
+We will now build the “Engine” of our pipeline. The logic follows these steps:
+
+1.  **Assign** the sample name to a variable.
+
+2.  **Define** the input and output file paths.
+
+3.  **Run** HISAT2 (Alignment).
+
+4.  **Run** Samtools Sort (Compression).
+
+5.  **Run** Samtools Index (Fast Retrieval).
+
+6.  **Cleanup** (Delete the large SAM files).
+
+```{r}
+index_prefix <- "data/data_kimia/reference/athal_index"
+
+for (i in 1:nrow(my_targets)) {
+  
+  # Step 1: Assign the SampleName to the variable s_name
+  s_name <- my_targets$SampleName[i]
+  
+  # Step 2: Define path to input file and assign it to input_fq
+  # YOUR TASK: Use the basename() and paste0() logic you practiced in Step 3!
+ input_fq <- paste0("data/data_kimia/trimmed/", str_remove(basename(my_targets$FileName1[i]), "gz"), "trimmed.fastq")
+ 
+  # Step 3: Given Paths to sam and bam output files
+  sam_out  <- paste0("data/data_kimia/alignments/samfiles/", s_name, ".sam")
+  bam_out  <- paste0("data/data_kimia/alignments/bamfiles/", s_name, ".sorted.bam")
+  
+  # Step 4: RUN HISAT2 (Alignment)
+  # Pay attention to args: -p 8, -x [index], -U [input], -S [output]
+  print(paste("Mapping:", s_name))
+ system2("hisat2", args = c("-x", index_prefix, "-U", input_fq, "-p 8", "-S", sam_out))
+  # system2("hisat2", args = c(...))
+  
+  # Step 5: RUN Samtools sort (Compression and ordering)
+  # Pay attention to args: sort, -@ 8, -o [output_bam], [input_sam]
+  print(paste("Sorting:", s_name))
+  system2("samtools", args = c ("sort", "-@ 8", "-o", bam_out, sam_out))
+  # system2("samtools", args = c(...))
+  
+  # Step 6: Index the bam file (Fast retrieval)
+  # Pay attention to args: index, [input_bam]
+  # system2("samtools", args = c(...))
+  system2("samtools", args = c ("index", bam_out))
+  
+  # Step 7: DELETE THE SAM (Space management!)
+  file.remove(sam_out)
+}
+```
+
+### **5. Verification & Summary**
+
+All good! :)))
+
+## **Part 4: Generating the Count Matrix**
+
+### **1. What is Rsubread?**
+
+To perform this task, we use the `Rsubread` package. This is an R-wrapper for the **Subread** suite, a high-performance software package designed specifically for mapping and counting genomic reads.
+
+### **2. Task: Running the Counts**
+
+```{r}
+# 1. Gather your BAM files
+my_bams <- list.files("data/data_kimia/alignments/bamfiles", pattern = "\\.sorted\\.bam$", full.names = TRUE)
+
+# 2. Reference the GTF structural map
+gtf_file <- "data/data_kimia/reference/GCF_000001735.4_TAIR10.1_genomic.gtf"
+
+# 3. Generate the counts
+fc_results <- featureCounts(files = my_bams,
+                            annot.ext = gtf_file,
+                            isGTFAnnotationFile = TRUE,
+                            GTF.featureType = "exon",
+                            GTF.attrType = "gene_id",
+                            nthreads = 8)
+
+# 4. Extract the raw count matrix
+raw_counts <- fc_results$counts
+```
+
+```{r}
+datatable(raw_counts)
+```
+
+## **Part 5: Data Harmonization**
+
+### **Task 3: The Tidyverse Cleanup**
+
+```{r}
+# Clean the names by removing file paths and extensions using stringr
+colnames(raw_counts) <- colnames(raw_counts) %>%
+  str_remove("data.alignments.") %>%
+  str_remove(".sorted.bam")
+```
+
+#### **The Final Sanity Check**
+
+```{r}
+# THE SANITY CHECK: This MUST return TRUE.
+all(colnames(raw_counts) %in% my_targets$SampleName)
+```
+
+# **Day 2 Wrap-Up: From Reads to Results**
+
+Let’s recap what you achieved today and where it fits in the big picture:
+
+1.  **Metadata Wrangling:** You took raw experimental notes and transformed them into a tidy, computer-readable format using `mutate` and `case_when`. This is the foundation of all downstream group comparisons.
+
+2.  **Pipeline Automation:** You graduated from running single terminal commands to building a scalable **Bioinformatics Pipeline**. By mastering `system2` and `for` loops, you can now process 10, 100, or 1000 samples with the same effort.
+
+3.  **Genomic Mapping:** You aligned short sequences to a reference genome, paying special attention to splice-aware junctions—a critical step in eukaryotes.
+
+4.  **Quantification:** Using `featureCounts`, you turned abstract sequence alignments into a **Gene Expression Matrix**. This is the digital equivalent of counting which “instructions” (mRNA) were active in the cell.
+
+# **Final Submission**
+
+```{r}
+write.csv(raw_counts, "data/MockVsVirulent_Specific_Counts.csv", row.names = TRUE)
+```
