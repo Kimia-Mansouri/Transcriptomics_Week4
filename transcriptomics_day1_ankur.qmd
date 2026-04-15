@@ -78,7 +78,7 @@ hisat2 -h
 #system2("hisat2-build", args = c("-p 8", ref_genome, index_prefix))
 
 
-system2("hisat2", args = c("-p 8","-x data/data_ankur/reference/athal_index","-U data/data_ankur/raw/SRR446027_1.fastq", "-S data/data_ankur/stdout.bam"))
+system2("hisat2", args = c("-p 8","-x data/data_ankur/reference/athal_index","-U data/data_ankur/trimmed/SRR446027_1.fastq", "-S data/data_ankur/stdout.bam"))
 ```
 
 ## Reflection
