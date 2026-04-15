@@ -3,3 +3,28 @@ title: "transcriptomics_day2_ankur"
 format: html
 ---
 
+```{r}
+library(tidyverse)
+library(systemPipeRdata)
+library(DT) # For interactive tables
+library(Rsubread)
+library(stringr)
+```
+
+### Loading the Data
+
+```{r}
+# Load the master metadata table provided by systemPipeRdata
+meta_data <- read.table(
+  system.file("extdata/param/targetsPE.txt", package = "systemPipeRdata"), 
+  header = TRUE, sep = "\t")
+```
+
+### Inspecting the Structure
+
+```{r}
+glimpse(meta_data)
+head(meta_data)
+```
+
+
