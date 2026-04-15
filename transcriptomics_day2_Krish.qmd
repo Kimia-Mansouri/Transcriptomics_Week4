@@ -5,23 +5,162 @@ format: html
 editor: visual
 ---
 
-## Quarto
+# **Part 1: Environmental Check & Collaboration**
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+### **1. Activation & R Libraries**
 
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
-```{r}
-1 + 1
+```{bash}
+conda activate
 ```
 
-You can add options to executable code like this
+Load the necessary R libraries for today if you restarted your R session from Day 1.
 
 ```{r}
 #| echo: false
-2 * 2
+library(tidyverse)
+library(systemPipeRdata)
+library(DT) # For interactive tables
+library(Rsubread)
+library(stringr)
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+# **Part 2: The Metadata Architecture**
+
+### **1. Loading the Data**
+
+```{r}
+# Load the master metadata table provided by systemPipeRdata
+meta_data <- read.table(
+  system.file("extdata/param/targetsPE.txt", package = "systemPipeRdata"), 
+  header = TRUE, sep = "\t")
+```
+
+### **2. Inspecting the Structure**
+
+```{r}
+head(meta_data)
+glimpse(meta_data)
+
+datatable(meta_data)
+```
+
+### **3. The Wrangling Challenge**
+
+```{r}
+# Create a clean 'Type' column based on patterns in SampleLong
+# case_when allows us to create multiple conditions in a single step
+# grepl returns TRUE if the pattern (e.g., "Mock") is found in the string
+meta_data <- meta_data %>% 
+  mutate(Type = case_when(
+    grepl("Mock", SampleLong) ~ "Mock",
+    grepl("Avr", SampleLong) ~ "Avirulent",
+    grepl("Vir", SampleLong) ~ "Virulent"
+  ))
+
+meta_data|>
+  select(SampleName, SampleLong, Type )|>
+  head()
+
+```
+
+### **4. The Filter Challenge**
+
+```{r}
+my_targets <- meta_data %>%
+  filter(Type %in% c("Virulent", "Avirulent"))
+
+print(my_targets$SampleName)
+```
+
+# **Part 3: The Pipeline Architecture**
+
+### **1. Driving the Terminal with `system2()`**
+
+```{r}
+# Example 1: List files in your current directory with multiple flags
+system2("ls", args = c("-F", "-a"))
+
+# Example 2: Check the current date/time from the system clock
+system2("date")
+
+# Practical Question: Write a system2 call to check the version of samtools (--version)
+# Write this in your .qmd
+
+system2("samtools", args = c("--version"))
+```
+
+### **2. The Anatomy of a `for` loop**
+
+```{r}
+# The Collection: A sequence of numbers from 1 to the number of rows
+for (i in 1:nrow(my_targets)) {
+  # 1. Print the current value of the iterator i (the row number)
+  print(paste("Currently processing row number:", i))
+  
+  # 2. Look up the SampleName for row 'i' and print it
+  print(my_targets$SampleName[i])
+  
+  s_name <- my_targets$SampleName
+  
+  print(s_name)
+}
+```
+
+### **3. Building Paths with `paste0()` and `basename()`**
+
+```{r}
+for (i in 1:nrow(my_targets)) {
+  print(paste0("data/Data_Krish/trimmed/", str_remove(basename(my_targets$FileName1[i]), "gz"), "trimmed.fastq"))
+}
+```
+
+### **4. Putting it Together: The Alignment Loop**
+
+```{r}
+index_prefix <- "data/Data_Krish/reference/athal_index"
+
+for (i in 1:nrow(my_targets)) {
+  
+  # Step 1: Assign the SampleName to the variable s_name
+  s_name <- my_targets$SampleName[i]
+  
+  # Step 2: Define path to input file and assign it to input_fq
+  # YOUR TASK: Use the basename() and paste0() logic you practiced in Step 3!
+    input_fq <- paste0("data/Data_Krish/trimmed/", str_remove(basename(my_targets$FileName1[i]), "gz"), "trimmed.fastq")
+    
+  # Step 3: Given Paths to sam and bam output files
+  sam_out  <- paste0("data/Data_Krish/alignment/", s_name, ".sam")
+  bam_out  <- paste0("data/Data_Krish/alignment/", s_name, ".sorted.bam")
+  
+  # Step 4: RUN HISAT2 (Alignment)
+  # Pay attention to args: -p 8, -x [index], -U [input], -S [output]
+  print(paste("Mapping:", s_name))
+  # system2("hisat2", args = c(...))
+  system2("hisat2" , args = c("-x" , index_prefix,  "-U", input_fq, "-p 8", "-S", sam_out))
+  
+  # Step 5: RUN Samtools sort (Compression and ordering)
+  # Pay attention to args: sort, -@ 8, -o [output_bam], [input_sam]
+  print(paste("Sorting:", s_name))
+  # system2("samtools", args = c(...))
+  system2("samtools", args = c("sort", "-@ 8", "-o", bam_out, sam_out ))
+  
+  
+  
+  
+  # Step 6: Index the bam file (Fast retrieval)
+  # Pay attention to args: index, [input_bam]
+  # system2("samtools", args = c(...))
+  system2("samtools", args = c("index", bam_out))
+  
+  # Step 7: DELETE THE SAM (Space management!)
+  file.remove(sam_out)
+}
+```
+
+### **5. Verification & Summary**
+
+```{bash}
+du -h data/Data_Krish/alignment/*.bam
+```
+
+# **Part 4: Generating the Count Matrix**
