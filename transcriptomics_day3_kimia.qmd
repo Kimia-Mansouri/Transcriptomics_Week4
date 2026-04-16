@@ -1,0 +1,37 @@
+---
+title: "transcriptomics_day3_kimia_p1"
+author: "Kimia"
+format: html
+editor: visual
+toc: true
+---
+
+# **The basics of transcriptomics pt3**
+
+## **Part 0: Computational Environment**
+
+```{r}
+
+BiocManager::install("EnhancedVolcano")
+# Define the required packages
+pkgs <- c("tidyverse", "DESeq2", "DT", "pheatmap", "RColorBrewer", "EnhancedVolcano", "ape")
+
+# Load all packages efficiently using lapply
+lapply(pkgs, library, character.only = TRUE)
+
+```
+
+## **Part 1: The Great Merger**
+
+## **Part 2: The Experimental Design Matrix**
+
+```{r}
+# Create a metadata frame
+# Ensure the levels are set so 'Mock' is the reference (the baseline)
+colData <- data.frame(
+  row.names = colnames(counts_master),
+  Condition = factor(rep(c("Mock", "Virulent", "Avirulent"), each = 6), 
+                     levels = c("Mock", "Virulent", "Avirulent")),
+  Time = factor(rep(rep(c("1h", "6h", "12h"), each = 2), 3))
+)
+```
