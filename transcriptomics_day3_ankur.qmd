@@ -284,6 +284,11 @@ print(results_summary)
 ```
 
 ```{r}
+write.csv(results_summary, "data/results_summary_ankur.csv", row.names = TRUE)
+```
+
+
+```{r}
 results_summary2 <- rbind(
   filter_and_count(res_1_6, "1h vs 6h"),
   filter_and_count(res_1_12, "1h vs 12h"),
@@ -306,6 +311,9 @@ results_summary2 |>
 pivot_longer(cols = c(Up_regulated, Down_regulated), 
                names_to = "Regulation", 
                values_to = "Count")
+```
+```{r}
+write.csv(results_summary2, "data/results_summary2_ankur.csv", row.names = TRUE)
 ```
 
 ## Graph
@@ -333,4 +341,47 @@ ggplot(plot_data, aes(x = Comparison, y = Count, fill = Regulation)) +
   geom_bar(stat = "identity", position = "dodge")
 ```
 
+Reflction 
+
+1. How does merging all 18 samples help DESeq2 estimate “dispersion” more robustly?
+Ans: It will help eleminating the posibility of batch standardising/normalising
+
+2. Why is a 2-fold change (log2FoldChange of 1) often the minimum threshold for biological interest?
+Ans: A 2-fold change (log2FoldChange of 1 or -1) is commonly used as a minimum threshold in differential expression analysis to balance statistical significance with biological relevance and experimental noise reduction. While lower thresholds can be used, a 2-fold change is traditionally regarded as a reliable indicator of a robust change in gene expression that is likely to impact cellular phenotypes
+
+
+3.
+
+```{r}
+write.csv(res_1_12, "data/results_1_12_ankur.csv", row.names = TRUE)
+write.csv(res_1_6, "data/results_1_6_ankur.csv", row.names = TRUE)
+write.csv(res_6_12, "data/results_6_12_ankur.csv", row.names = TRUE)
+```
+
+
+
+```{r}
+filter_and_count2 <- function(res_obj, fc_threshold = 2) {
+  # 1. Remove rows with NAs in padj
+  res_filtered <- res_obj[!is.na(res_obj$padj) & !is.na(res_obj$log2FoldChange), ]
+  
+  # 2. Apply filters: |log2FC| >= log2(fc_threshold) and padj < 0.2
+  # Note: 0.2 matches the alpha we set in our results() calls
+  sig_genes <- res_filtered[abs(res_filtered$log2FoldChange) >= log2(fc_threshold) & res_filtered$padj < 0.2, ]
+  return(sig_genes)
+}
+
+```
+
+```{r}
+  a <- filter_and_count2(res_1_6)
+  b <- filter_and_count2(res_1_12)
+  c <- filter_and_count2(res_6_12)
+```
+
+```{r}
+write.csv(b, "data/fres_1_12_ankur.csv", row.names = TRUE)
+write.csv(a, "data/fres_1_6_ankur.csv", row.names = TRUE)
+write.csv(c, "data/fres_6_12_ankur.csv", row.names = TRUE)
+```
 
