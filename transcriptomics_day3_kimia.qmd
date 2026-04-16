@@ -242,3 +242,26 @@ ggplot (plot_data, aes (x = Comparison, y = Count, fill = Regulation)) +
 ```
 
 # **Final Submission**
+
+```{r}
+# YOUR TASK: Write the code to save your significant virulent genes to 'data/data_yourname/sig_virulent_genes.csv'
+
+filter_and_count2 <- function(res_obj, fc_threshold = 2) {
+  # 1. Remove rows with NAs in padj
+  res_filtered <- res_obj[!is.na(res_obj$padj) & !is.na(res_obj$log2FoldChange), ]
+  
+  # 2. Apply filters: |log2FC| >= log2(fc_threshold) and padj < 0.2
+  # Note: 0.2 matches the alpha we set in our results() calls
+  sig_genes <- res_filtered[abs(res_filtered$log2FoldChange) >= log2(fc_threshold) & res_filtered$padj < 0.2, ]
+  return(sig_genes)
+}
+
+write.csv(filter_and_count2(res_1h_12h), "data/data_kimia/sig_1h_12h_genes.csv", row.names=TRUE) 
+write.csv(filter_and_count2(res_1h_6h), "data/data_kimia/sig_1h_6h_genes.csv", row.names = TRUE)
+write.csv(filter_and_count2(res_6h_12h), "data/data_kimia/sig_6h_12h_genes.csv", row.names = TRUE)
+
+write.csv(res_1h_12h, "data/data_kimia/notsig_1h_12h_genes.csv", row.names = TRUE)
+write.csv(res_1h_6h, "data/data_kimia/notsig_1h_6h_genes.csv", row.names = TRUE)
+write.csv(res_6h_12h, "data/data_kimia/notsig_6h_12h_genes.csv", row.names = TRUE)
+
+```
