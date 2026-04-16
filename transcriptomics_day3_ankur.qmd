@@ -11,6 +11,13 @@ format: html
 ```
 
 ```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+
+```{r}
 # Define the required packages
 pkgs <- c("tidyverse", "DESeq2", "DT", "pheatmap", "RColorBrewer", "EnhancedVolcano", "ape")
 
@@ -286,4 +293,44 @@ results_summary2 <- rbind(
 # Inspect the final summary table
 print(results_summary2)
 ```
+
+```{r}
+results_summary |>
+pivot_longer(cols = c(Up_regulated, Down_regulated), 
+               names_to = "Regulation", 
+               values_to = "Count")
+```
+
+```{r}
+results_summary2 |>
+pivot_longer(cols = c(Up_regulated, Down_regulated), 
+               names_to = "Regulation", 
+               values_to = "Count")
+```
+
+## Graph
+
+```{r}
+
+plot_data <- results_summary %>%
+  pivot_longer(cols = c(Up_regulated, Down_regulated), 
+               names_to = "Regulation", 
+               values_to = "Count") %>%
+  mutate(Regulation = factor(Regulation, levels = c("Up_regulated", "Down_regulated")))
+
+ggplot(plot_data, aes(x = Comparison, y = Count, fill = Regulation)) +
+  geom_bar(stat = "identity", position = "dodge")
+```
+
+```{r}
+plot_data <- results_summary2 %>%
+  pivot_longer(cols = c(Up_regulated, Down_regulated), 
+               names_to = "Regulation", 
+               values_to = "Count") %>%
+  mutate(Regulation = factor(Regulation, levels = c("Up_regulated", "Down_regulated")))
+
+ggplot(plot_data, aes(x = Comparison, y = Count, fill = Regulation)) +
+  geom_bar(stat = "identity", position = "dodge")
+```
+
 
