@@ -35,3 +35,5 @@ colData <- data.frame(
   Time = factor(rep(rep(c("1h", "6h", "12h"), each = 2), 3))
 )
 ```
+
+## **Part 3: Introduction to DESeq2**
