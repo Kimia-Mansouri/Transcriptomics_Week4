@@ -3,6 +3,7 @@ title: "transcriptomics_day3_ankur"
 format: html
 ---
 ```{r}
+#| eval: False
   if (!requireNamespace('BiocManager', quietly = TRUE))
     install.packages('BiocManager')
 
@@ -54,5 +55,235 @@ ncol(counts_master)
 ```
 ```{r}
 write.csv(counts_master, "data/mock_vs_avr_vs_vir.csv", row.names = TRUE)
+```
+
+
+## Creating the colData
+
+```{r}
+# Create a metadata frame
+# Ensure the levels are set so 'Mock' is the reference (the baseline)
+colData <- data.frame(
+  row.names = colnames(counts_master),
+  Condition = factor(rep(c("Virulent", "Avirulent", "Mock"), each = 6), 
+                     levels = c("Mock", "Virulent", "Avirulent")),
+  Time = factor(rep(rep(c("12h", "1h", "6h"), each = 2), 3))
+)
+```
+
+```{r}
+colData$Condition
+```
+
+## Task: Metadata Expansion
+
+```{r}
+colData$type <- factor(rep("single-read", nrow(colData)))
+
+print(colData)
+
+all(rownames(colData) == colnames(counts_master))
+```
+## DESeq2
+
+```{r}
+# Create the dds object
+dds <- DESeqDataSetFromMatrix(countData = round(counts_master),
+                              colData = colData,
+                              design = ~ Condition)
+
+```
+
+
+## Building the Dendrogram
+
+```{r}
+# 1. Transform the data to stabilize variance
+vsd <- varianceStabilizingTransformation(dds, blind = FALSE)
+vsd_mat <- assay(vsd) # Extract the matrix of transformed values
+
+# 2. Calculate the distance between samples
+# We transpose the matrix with t() because dist() calculates distance between rows
+sample_dist <- dist(t(vsd_mat))
+
+# 3. Perform Hierarchical Clustering
+clusters <- hclust(sample_dist)
+
+# 4. Plot the results using the ape package for a cleaner phylogenetic look
+# We convert the hclust object to a phylo object for professional plotting.
+# We map 'Condition' to 'tip.label' so the tree is easy to interpret.
+plot.phylo(as.phylo(clusters), 
+           tip.label = colData$Condition, 
+           type = "p", 
+           edge.col = "grey", 
+           edge.width = 2,
+           no.margin = TRUE)
+```
+If the data is big instead of using varianceStabilizingTransformation us vst. In that case there is possibility of more clear clustering.
+
+1. According to the diagram above, No 2 same condition Mock able to get cluster together this maybe due to small small dataset or its because of small dataset.
+
+2. No, there is no clear difference according to condition, however difference based on time is slightly noticeable.
+
+3. In the experiment Virulent sample sitting in the middle of the Mock branch, suggest they are similar to each other. 
+
+
+## The Main Event - Differential Expression
+
+
+```{r}
+# Assign the output to a new object to keep your original dds safe
+dds_results <- DESeq(dds)
+```
+
+```{r}
+# Extract results for Avirulent vs. Mock
+res_avr_mock <- results(dds_results, contrast = c("Condition", "Avirulent", "Mock"), alpha = 0.2)
+
+# Print the first few rows to see the table
+print(res_avr_mock)
+```
+
+```{r}
+# See a high-level summary of the results
+summary(res_avr_mock)
+```
+
+```{r}
+res_vir_mock <- results(dds_results, contrast = c("Condition", "Virulent", "Mock"), alpha = 0.2)
+
+# Print the first few rows to see the table
+print(res_vir_mock)
+
+```
+
+```{r}
+summary(res_vir_mock)
+```
+
+```{r}
+res_vir_avr <- results(dds_results, contrast = c("Condition", "Virulent", "Avirulent"), alpha = 0.2)
+
+# Print the first few rows to see the table
+print(res_vir_avr)
+
+```
+
+```{r}
+summary(res_vir_avr)
+```
+
+```{r}
+# Create the dds2 object
+dds2 <- DESeqDataSetFromMatrix(countData = round(counts_master),
+                              colData = colData,
+                              design = ~ Time)
+```
+
+```{r}
+# 1. Transform the data to stabilize variance
+vsd <- varianceStabilizingTransformation(dds, blind = FALSE)
+vsd_mat <- assay(vsd) # Extract the matrix of transformed values
+
+# 2. Calculate the distance between samples
+# We transpose the matrix with t() because dist() calculates distance between rows
+sample_dist <- dist(t(vsd_mat))
+
+# 3. Perform Hierarchical Clustering
+clusters <- hclust(sample_dist)
+
+# 4. Plot the results using the ape package for a cleaner phylogenetic look
+# We convert the hclust object to a phylo object for professional plotting.
+# We map 'Condition' to 'tip.label' so the tree is easy to interpret.
+plot.phylo(as.phylo(clusters), 
+           tip.label = colData$Condition, 
+           type = "p", 
+           edge.col = "grey", 
+           edge.width = 2,
+           no.margin = TRUE)
+```
+```{r}
+# Assign the output to a new object to keep your original dds safe
+dds_results <- DESeq(dds2)
+```
+
+```{r}
+# Extract results for
+res_1_12 <- results(dds_results, contrast = c("Time", "1h", "12h"), alpha = 0.2)
+
+# Print the first few rows to see the table
+print(res_1_12)
+```
+```{r}
+# Extract results for
+res_6_12 <- results(dds_results, contrast = c("Time", "6h", "12h"), alpha = 0.2)
+
+# Print the first few rows to see the table
+print(res_6_12)
+```
+```{r}
+# Extract results for
+res_1_6 <- results(dds_results, contrast = c("Time", "1h", "6h"), alpha = 0.2)
+
+# Print the first few rows to see the table
+print(res_1_6)
+```
+
+
+```{r}
+summary(res_1_12)
+```
+```{r}
+summary(res_1_6)
+```
+
+```{r}
+summary(res_6_12)
+```
+## Filtering and Ranking
+
+```{r}
+# Function to filter and count DE genes
+filter_and_count <- function(res_obj, comparison_name, fc_threshold = 2) {
+  # 1. Remove rows with NAs in padj
+  res_filtered <- res_obj[!is.na(res_obj$padj) & !is.na(res_obj$log2FoldChange), ]
+  
+  # 2. Apply filters: |log2FC| >= log2(fc_threshold) and padj < 0.2
+  # Note: 0.2 matches the alpha we set in our results() calls
+  sig_genes <- res_filtered[abs(res_filtered$log2FoldChange) >= log2(fc_threshold) & res_filtered$padj < 0.2, ]
+  
+  # 3. Count up and down regulated
+  up_regulated <- sum(sig_genes$log2FoldChange > 0)
+  down_regulated <- sum(sig_genes$log2FoldChange < 0)
+  
+  # Return as a clean data frame
+  return(data.frame(
+    Comparison = comparison_name,
+    Up_regulated = up_regulated,
+    Down_regulated = down_regulated
+  ))
+}
+```
+
+```{r}
+results_summary <- rbind(
+  filter_and_count(res_vir_mock, "Vir vs Mock"),
+  filter_and_count(res_avr_mock, "Avr vs Mock"),
+  filter_and_count(res_vir_avr, "Vir vs Avr")
+)
+
+# Inspect the final summary table
+print(results_summary)
+```
+
+```{r}
+results_summary2 <- rbind(
+  filter_and_count(res_1_6, "1h vs 6h"),
+  filter_and_count(res_1_12, "1h vs 12h"),
+  filter_and_count(res_6_12, "6h vs 12h")
+)
+
+# Inspect the final summary table
+print(results_summary2)
 ```
 
