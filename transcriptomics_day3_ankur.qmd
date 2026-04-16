@@ -1,0 +1,19 @@
+---
+title: "transcriptomics_day3_ankur"
+format: html
+---
+```{r}
+  if (!requireNamespace('BiocManager', quietly = TRUE))
+    install.packages('BiocManager')
+
+  BiocManager::install('EnhancedVolcano')
+```
+
+```{r}
+# Define the required packages
+pkgs <- c("tidyverse", "DESeq2", "DT", "pheatmap", "RColorBrewer", "EnhancedVolcano", "ape")
+
+# Load all packages efficiently using lapply
+lapply(pkgs, library, character.only = TRUE)
+```
+
