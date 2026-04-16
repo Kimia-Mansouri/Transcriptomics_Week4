@@ -11,29 +11,235 @@ toc: true
 ## **Part 0: Computational Environment**
 
 ```{r}
-
 BiocManager::install("EnhancedVolcano")
 # Define the required packages
 pkgs <- c("tidyverse", "DESeq2", "DT", "pheatmap", "RColorBrewer", "EnhancedVolcano", "ape")
 
 # Load all packages efficiently using lapply
 lapply(pkgs, library, character.only = TRUE)
-
 ```
 
 ## **Part 1: The Great Merger**
 
+```{r}
+count_master <- read.csv("data/mock_vs_avr_vs_vir.csv", row.names = 1)
+```
+
 ## **Part 2: The Experimental Design Matrix**
+
+### **1. Creating the colData**
 
 ```{r}
 # Create a metadata frame
 # Ensure the levels are set so 'Mock' is the reference (the baseline)
 colData <- data.frame(
-  row.names = colnames(counts_master),
-  Condition = factor(rep(c("Mock", "Virulent", "Avirulent"), each = 6), 
-                     levels = c("Mock", "Virulent", "Avirulent")),
-  Time = factor(rep(rep(c("1h", "6h", "12h"), each = 2), 3))
+  row.names = colnames(count_master),
+  Condition = factor(rep(c("Virulent", "Avirulent", "Mock"), each = 6), 
+                     levels = c("Virulent", "Avirulent", "Mock")),
+  Time = factor(rep(rep(c("12h", "1h", "6h"), each = 2), 3))
 )
 ```
 
+### **2. Task: Metadata Expansion**
+
+```{r}
+colData <- colData %>%
+  mutate(type = factor(rep("single-read")))
+
+print(colData)
+```
+
+```{r}
+all(rownames(colData) == colnames(count_master))
+```
+
 ## **Part 3: Introduction to DESeq2**
+
+### **2. Constructing the DESeq Object**
+
+```{r}
+# Create the dds object
+dds <- DESeqDataSetFromMatrix(countData = round(count_master),
+                              colData = colData,
+                              design = ~ Condition)
+
+dds2 <- DESeqDataSetFromMatrix(countData = round(count_master),
+                              colData = colData,
+                              design = ~ Time)
+```
+
+## **Part 4: Exploratory Data Analysis: Hierarchical Clustering**
+
+### **3. Task: Building the Dendrogram**
+
+```{r}
+# 1. Transform the data to stabilize variance
+vsd <- varianceStabilizingTransformation(dds, blind =FALSE)
+vsd_mat <- assay(vsd) # Extract the matrix of transformed values
+
+# 2. Calculate the distance between samples
+# We transpose the matrix with t() because dist() calculates distance between rows
+sample_dist <- dist(t(vsd_mat))
+
+# 3. Perform Hierarchical Clustering
+clusters <- hclust(sample_dist)
+
+# 4. Plot the results using the ape package for a cleaner phylogenetic look
+# We convert the hclust object to a phylo object for professional plotting.
+# We map 'Condition' to 'tip.label' so the tree is easy to interpret.
+plot.phylo(as.phylo(clusters), 
+           tip.label = colData$Condition, 
+           type = "p", 
+           edge.col = "grey", 
+           edge.width = 2,
+           no.margin = TRUE)
+```
+
+-   Look at the dendrogram. Do the replicates for the same condition (e.g., the two `Mock` samples at 1h) cluster together on the same small branches?
+
+    A lot of the clusters early in the infection are clustered together based on time and not condition, which the later hours' clusters are based on condition. Early and late groups.
+
+-   Do you see a clear split between the `Mock` group and the infected groups?
+
+    We can see some of the mock groups being clustered together with the infected groups, e.g. M6B and A6B since the initial injury looks the same.
+
+-   If a sample is “out of place” (e.g., a Virulent sample sitting in the middle of the Mock branch), what might that suggest about the experiment?
+
+    That maybe the infection takes some time to take place and it takes time for the plant to express its defense genes. There are differences in the data.
+
+```{r}
+vsd <- varianceStabilizingTransformation(dds2, blind =FALSE)
+vsd_mat <- assay(vsd) # Extract the matrix of transformed values
+
+# 2. Calculate the distance between samples
+# We transpose the matrix with t() because dist() calculates distance between rows
+sample_dist <- dist(t(vsd_mat))
+
+# 3. Perform Hierarchical Clustering
+clusters <- hclust(sample_dist)
+
+# 4. Plot the results using the ape package for a cleaner phylogenetic look
+# We convert the hclust object to a phylo object for professional plotting.
+# We map 'Condition' to 'tip.label' so the tree is easy to interpret.
+plot.phylo(as.phylo(clusters), 
+           tip.label = colData$Time, 
+           type = "p", 
+           edge.col = "grey", 
+           edge.width = 2,
+           no.margin = TRUE)
+```
+
+## **Part 5: The Main Event - Differential Expression**
+
+### **1. Running the Pipeline - our null hypothesis is that all genes are expressed the same.** 
+
+```{r}
+# Assign the output to a new object to keep your original dds safe
+dds_results <- DESeq(dds)
+
+dds_results2 <- DESeq(dds2)
+```
+
+### **2. Extracting Specific Results**
+
+alpha is usually the p-value. Here alpha represents the your target **False Discovery Rate (FDR)**. The proportion of false positives among all significant results. 20% of our significant genes with (0.05% p value for being differentially expressed) might be false positives. Used the p-value to get significant ones and estimated the proportions of falsely discovered genes.
+
+```{r}
+# Extract results for Avirulent vs. Mock
+res_avr_mock <- results(dds_results, contrast = c("Condition", "Avirulent", "Mock"), alpha = 0.2)
+
+res_1h_12h <- results(dds_results2, contrast = c("Time", "1h", "12h"), alpha = 0.2)
+
+# Print the first few rows to see the table
+print(res_avr_mock)
+print(res_1h_12h)
+```
+
+```{r}
+# See a high-level summary of the results
+summary(res_1h_12h)
+```
+
+```{r}
+res_vir_mock <- results(dds_results, contrast = c("Condition", "Virulent", "Mock"), alpha = 0.2)
+
+res_vir_avr <- results(dds_results, contrast = c ("Condition", "Virulent", "Avirulent"), alpha = 0.2)
+
+res_1h_6h <-results(dds_results2, contrast = c("Time", "1h", "6h"), alpha = 0.2)
+
+res_6h_12h <- results(dds_results2, contrast = c("Time", "6h", "12h"), alpha = 0.2)
+
+summary(res_vir_mock)
+summary(res_vir_avr)
+summary(res_1h_6h)
+summary(res_6h_12h)
+```
+
+## **Part 6: Filtering and Ranking**
+
+### **2. Automation with Custom Functions**
+
+```{r}
+# Function to filter and count DE genes
+filter_and_count <- function(res_obj, comparison_name, fc_threshold = 2) {
+  # 1. Remove rows with NAs in padj
+  res_filtered <- res_obj[!is.na(res_obj$padj) & !is.na(res_obj$log2FoldChange), ]
+  
+  # 2. Apply filters: |log2FC| >= log2(fc_threshold) and padj < 0.2
+  # Note: 0.2 matches the alpha we set in our results() calls
+  sig_genes <- res_filtered[abs(res_filtered$log2FoldChange) >= log2(fc_threshold) & res_filtered$padj < 0.2, ]
+  
+  # 3. Count up and down regulated
+  up_regulated <- sum(sig_genes$log2FoldChange > 0)
+  down_regulated <- sum(sig_genes$log2FoldChange < 0)
+  
+  # Return as a clean data frame
+  return(data.frame(
+    Comparison = comparison_name,
+    Up_regulated = up_regulated,
+    Down_regulated = down_regulated
+  ))
+}
+
+```
+
+### **3. Generating the Global Summary**
+
+```{r}
+results_summary <- rbind(
+  filter_and_count(res_1h_12h, "1h vs 12h"),
+  filter_and_count(res_1h_6h, "1h vs 6h"),
+  filter_and_count(res_6h_12h, "6h vs 12h")
+)
+
+results_summary2 <- rbind(
+  filter_and_count(res_vir_mock, "Vir vs Mock"),
+  filter_and_count(res_avr_mock, "Avr vs Mock"),
+  filter_and_count(res_vir_avr, "Vir vs Avr")
+)
+
+# Inspect the final summary table
+print(results_summary2)
+
+# Inspect the final summary table
+print(results_summary)
+```
+
+```{r}
+
+```
+
+```{r}
+# Step 1: Pivot the data to long format
+plot_data <- results_summary %>%
+  pivot_longer(cols = c(Up_regulated, Down_regulated), 
+               names_to = "Regulation", 
+               values_to = "Count") %>%
+  mutate(Regulation = factor(Regulation, levels = c("Up_regulated", "Down_regulated")))
+
+# Step 2: Create a Bar Plot
+# Hint: Use aes(x = Comparison, y = Count, fill = Regulation) 
+# and geom_bar(stat = "identity", position = "dodge")
+```
+
+# **Final Submission**
