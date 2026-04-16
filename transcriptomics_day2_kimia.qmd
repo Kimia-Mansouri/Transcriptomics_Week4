@@ -8,7 +8,7 @@ toc: true
 
 # **The basics of transcriptomics pt2**
 
-Counting how many reads are mapped, the more reads mapped the more they are.
+Counting how many reads are mapped per gene, the more reads mapped the more they are expressed
 
 ## **Part 1: Environmental Check & Collaboration**
 
