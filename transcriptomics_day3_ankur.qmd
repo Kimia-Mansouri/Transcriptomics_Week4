@@ -380,8 +380,8 @@ filter_and_count2 <- function(res_obj, fc_threshold = 2) {
 ```
 
 ```{r}
-write.csv(b, "data/results_1_12_ankur.csv", row.names = TRUE)
-write.csv(a, "data/results_1_6_ankur.csv", row.names = TRUE)
-write.csv(c, "data/results_6_12_ankur.csv", row.names = TRUE)
+write.csv(b, "data/fres_1_12_ankur.csv", row.names = TRUE)
+write.csv(a, "data/fres_1_6_ankur.csv", row.names = TRUE)
+write.csv(c, "data/fres_6_12_ankur.csv", row.names = TRUE)
 ```
 
