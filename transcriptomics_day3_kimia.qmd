@@ -226,10 +226,6 @@ print(results_summary)
 ```
 
 ```{r}
-
-```
-
-```{r}
 # Step 1: Pivot the data to long format
 plot_data <- results_summary %>%
   pivot_longer(cols = c(Up_regulated, Down_regulated), 
@@ -240,6 +236,9 @@ plot_data <- results_summary %>%
 # Step 2: Create a Bar Plot
 # Hint: Use aes(x = Comparison, y = Count, fill = Regulation) 
 # and geom_bar(stat = "identity", position = "dodge")
+
+ggplot (plot_data, aes (x = Comparison, y = Count, fill = Regulation)) +
+         geom_bar(stat = "identity", position = "dodge")
 ```
 
 # **Final Submission**
