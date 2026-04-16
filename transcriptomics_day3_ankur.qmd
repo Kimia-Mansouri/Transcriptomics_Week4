@@ -16,4 +16,43 @@ pkgs <- c("tidyverse", "DESeq2", "DT", "pheatmap", "RColorBrewer", "EnhancedVolc
 # Load all packages efficiently using lapply
 lapply(pkgs, library, character.only = TRUE)
 ```
+# Merging
+
+```{r}
+# 1. Load all files available in your group
+my_counts      <- read.csv("data/mock_vs_avr.csv", row.names = 1)
+partner_1_counts <- read.csv("data/MockVsVirulent_Specific_Counts.csv", row.names = 1)
+partner_2_counts <- read.csv("data/Virulent_Avirulent_Counts.csv", row.names = 1) # Optional for Trios
+
+# 2. Start with your counts as the base Master Matrix
+# We convert row names to a column named "GeneID" to enable the join
+counts_master <- my_counts %>% rownames_to_column("GeneID")
+
+# 3. Merge Partner A - The "Safe-Merge" Pipe
+# any_of() checks the column names of our master table and 
+# removes them from the partner's table BEFORE joining.
+counts_master <- partner_1_counts %>% 
+  rownames_to_column("GeneID") %>%
+  select(-any_of(colnames(counts_master)), GeneID) %>%
+  inner_join(counts_master, by = "GeneID")
+
+# 4. Merge Partner B (Only if you are a group of 3)
+counts_master <- partner_2_counts %>% 
+  rownames_to_column("GeneID") %>%
+  select(-any_of(colnames(counts_master)), GeneID) %>%
+  inner_join(counts_master, by = "GeneID")
+
+# 5. Finalize the matrix
+counts_master <- counts_master %>% column_to_rownames("GeneID")
+
+# 6. Sanity Check: 
+# Regardless of group size, you should see exactly 18 columns 
+# (6 Mock, 6 Virulent, 6 Avirulent)
+ncol(counts_master)
+
+
+```
+```{r}
+write.csv(counts_master, "data/mock_vs_avr_vs_vir.csv", row.names = TRUE)
+```
 
