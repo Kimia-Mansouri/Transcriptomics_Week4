@@ -348,3 +348,4 @@ Ans: It will help eleminating the posibility of batch standardising/normalising
 
 2. Why is a 2-fold change (log2FoldChange of 1) often the minimum threshold for biological interest?
 Ans: A 2-fold change (log2FoldChange of 1 or -1) is commonly used as a minimum threshold in differential expression analysis to balance statistical significance with biological relevance and experimental noise reduction. While lower thresholds can be used, a 2-fold change is traditionally regarded as a reliable indicator of a robust change in gene expression that is likely to impact cellular phenotypes
+
