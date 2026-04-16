@@ -94,7 +94,7 @@ Bioinformatics is modular. You have already mastered many of these steps; today 
 ### Experiment Setup
 
 | Treatment Group | Type | Time Points (h) | Replicates per Time | Total Samples | Focus |
-|------------|------------|------------|------------|------------|------------|
+|----|----|----|----|----|----|
 | **Mock** | Control | 1, 6, 12 | 2 | 6 | Baseline stress response. |
 | **Virulent (Pst)** | Susceptible | 1, 6, 12 | 2 | 6 | Successful infection/Immune suppression. |
 | **Avirulent (avrRps4)** | Resistant | 1, 6, 12 | 2 | 6 | Effector-Triggered Immunity (ETI). |
