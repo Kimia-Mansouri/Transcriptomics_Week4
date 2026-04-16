@@ -311,9 +311,6 @@ pivot_longer(cols = c(Up_regulated, Down_regulated),
 ## Graph
 
 ```{r}
-library(dplyr)
-library(tidyr)
-library(ggplot2)
 
 plot_data <- results_summary %>%
   pivot_longer(cols = c(Up_regulated, Down_regulated), 
