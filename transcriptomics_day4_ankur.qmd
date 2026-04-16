@@ -1,0 +1,90 @@
+---
+title: "transcriptomics_day4_ankur"
+format: html
+---
+
+## 1. Installation
+
+```{r}
+# Check and install missing critical packages if they don't exist
+if (!requireNamespace("org.At.tair.db", quietly = TRUE)) BiocManager::install("org.At.tair.db", update = FALSE)
+if (!requireNamespace("viridis", quietly = TRUE)) install.packages("viridis")
+
+# Define the required packages
+# clusterProfiler: For GO enrichment
+# org.At.tair.db: The Arabidopsis annotation database
+# viridis: For colorblind-friendly palettes
+pkgs <- c("tidyverse", "DESeq2", "pheatmap", "EnhancedVolcano", 
+          "clusterProfiler", "org.At.tair.db", "RColorBrewer", "viridis")
+
+# Load all packages efficiently using lapply
+lapply(pkgs, library, character.only = TRUE)
+```
+
+## 2. Loading Files
+
+```{r}
+# Load your dds_results and count matrix from Day 3
+
+# Ensure these objects are in your environment before proceeding
+print("Biological Discovery Environment: READY")
+```
+
+
+## 3. The Volcano Plot
+
+```{r}
+ EnhancedVolcano(res_1_12,
+                lab = rownames(res_1_12),
+                x = 'log2FoldChange',
+                y = 'padj',
+                title = 'Time Series: 12h vs. 1h',
+                pCutoff = 0.2, 
+                FCcutoff = 1.0,
+                pointSize = 3.0,
+                labSize = 4.0)
+```
+
+
+```{r}
+EnhancedVolcano(res_1_6,
+                lab = rownames(res_1_6),
+                x = 'log2FoldChange',
+                y = 'padj',
+                title = 'Time Series: 1h vs. 6h',
+                pCutoff = 0.2, 
+                FCcutoff = 1.0,
+                pointSize = 3.0,
+                labSize = 4.0)
+```
+
+
+```{r}
+EnhancedVolcano(res_6_12,
+                lab = rownames(res_6_12),
+                x = 'log2FoldChange',
+                y = 'padj',
+                title = 'Time Series: 6h vs. 12h',
+                pCutoff = 0.2, 
+                FCcutoff = 1.0,
+                pointSize = 3.0,
+                labSize = 4.0)
+```
+
+# The heatmap and Z-scores
+
+```{r}
+# 1. Extract the VST-transformed counts for your significant 1h vs 12h genes
+# Assuming your filtered object is named 'sig_1h_12h'
+plot_mat_12h <- assay(vsd)[rownames(sig_1h_12h), ]
+
+# 2. Create the Heatmap
+pheatmap(plot_mat_12h, 
+         scale = "row", 
+         clustering_distance_rows = "euclidean",
+         clustering_method = "complete",
+         color = magma(100), 
+         show_colnames = TRUE,
+         main = "Significant Genes: 12h vs 1h")
+```
+
