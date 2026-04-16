@@ -1,0 +1,24 @@
+---
+title: "ranscriptomics_day3_Krish"
+author: "Krish Desai"
+format: html
+editor: visual
+---
+
+# **Part 0: Computational Environment**
+
+```{bash}
+conda create transcriptomics_env python=3.8
+```
+
+```{r}
+#| echo: false
+
+
+# Define the required packages
+pkgs <- c("tidyverse", "DESeq2", "DT", "pheatmap", "RColorBrewer", "EnhancedVolcano", "ape")
+
+# Load all packages efficiently using lapply
+lapply(pkgs, library, character.only = TRUE)
+
+```
