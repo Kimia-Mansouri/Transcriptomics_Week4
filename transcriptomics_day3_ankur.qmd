@@ -11,6 +11,13 @@ format: html
 ```
 
 ```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+
+```{r}
 # Define the required packages
 pkgs <- c("tidyverse", "DESeq2", "DT", "pheatmap", "RColorBrewer", "EnhancedVolcano", "ape")
 
@@ -319,11 +326,6 @@ ggplot(plot_data, aes(x = Comparison, y = Count, fill = Regulation)) +
 ```
 
 ```{r}
-
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-
 plot_data <- results_summary2 %>%
   pivot_longer(cols = c(Up_regulated, Down_regulated), 
                names_to = "Regulation", 
