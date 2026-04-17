@@ -36,6 +36,8 @@ lapply(pkgs, library, character.only = TRUE)
 
 **Bonus:** Do it for 6h vs 12h
 
+### 12h vs. 1h
+
 ```{r}
 EnhancedVolcano(res_1h_12h,
                 lab = rownames(res_1h_12h),
@@ -47,6 +49,8 @@ EnhancedVolcano(res_1h_12h,
                 pointSize = 3.0,
                 labSize = 4.0)
 ```
+
+### 1h vs. 6h
 
 ```{r}
 EnhancedVolcano(res_1h_6h,
@@ -60,6 +64,78 @@ EnhancedVolcano(res_1h_6h,
                 labSize = 4.0)
 ```
 
-```{r}
+### 6h vs. 12h
 
+```{r}
+EnhancedVolcano(res_6h_12h,
+                lab = rownames(res_6h_12h),
+                x = 'log2FoldChange',
+                y = 'padj',
+                title = 'Time Series: 6h vs. 12h',
+                pCutoff = 0.2, 
+                FCcutoff = 1.0,
+                pointSize = 3.0,
+                labSize = 4.0)
+```
+
+## **Part 2: The Heatmap and Z-Scores**
+
+```{r}
+vsd2 <- varianceStabilizingTransformation(dds2, blind =FALSE)
+vsd_mat2 <- assay(vsd2) # Extract the matrix of transformed values
+```
+
+### **3. Task: Visualizing the Top Responders (with Accessible Design)**
+
+```{r}
+sig_1h_12h <- read.csv("data/data_kimia/sig_1h_12h_genes.csv", row.names = 1)
+sig_1h_6h <- read.csv("data/data_kimia/sig_1h_6h_genes.csv", row.names = 1)
+sig_6h_12h <- read.csv("data/data_kimia/sig_6h_12h_genes.csv", row.names = 1)
+```
+
+#### 1h vs. 12h
+
+```{r}
+# 1. Extract the VST-transformed counts for your significant 1h vs 12h genes
+# Assuming your filtered object is named 'sig_1h_12h'
+plot_mat_12h <- assay(vsd2)[rownames(sig_1h_12h), ]
+
+# 2. Create the Heatmap
+pheatmap(plot_mat_12h, 
+         scale = "row", 
+         clustering_distance_rows = "euclidean",
+         clustering_method = "complete",
+         color = magma(100), 
+         show_colnames = TRUE,
+         main = "Significant Genes: 12h vs 1h")
+```
+
+#### 1h vs. 6h
+
+```{r}
+plot_mat_1h<- assay(vsd2)[rownames(sig_1h_6h), ]
+
+# 2. Create the Heatmap
+pheatmap(plot_mat_1h, 
+         scale = "row", 
+         clustering_distance_rows = "euclidean",
+         clustering_method = "complete",
+         color = magma(100), 
+         show_colnames = TRUE,
+         main = "Significant Genes: 1h vs 6h")
+```
+
+#### 12h vs. 6h
+
+```{r}
+plot_mat_12h_6h <- assay(vsd2)[rownames(sig_6h_12h), ]
+
+# 2. Create the Heatmap
+pheatmap(plot_mat_12h_6h, 
+         scale = "row", 
+         clustering_distance_rows = "euclidean",
+         clustering_method = "complete",
+         color = magma(100), 
+         show_colnames = TRUE,
+         main = "Significant Genes: 12h vs 6h")
 ```
