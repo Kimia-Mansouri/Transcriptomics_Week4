@@ -318,6 +318,23 @@ ego_avr <- enrichGO(gene          = base::rownames(sig_avr_up),
 # dotplot naturally uses the colorblind-friendly scales from ggplot2
 enrichplot::dotplot(ego_avr, showCategory=20) + ggtitle("GO Enrichment: Avirulent Response")
 ```
+```{r}
+# 1. Convert to a dataframe
+ego_df <- as.data.frame(ego_avr) %>%
+  head(20) %>%
+  # Secret trick: GeneRatio is a string "5/40". 
+  # We use parse/eval to turn it into a decimal number (0.125).
+  mutate(GeneRatioNumeric = sapply(GeneRatio, function(x) eval(parse(text=x))))
+
+# 2. Plot with geom_point
+ggplot(ego_df, aes(x = GeneRatioNumeric, y = reorder(Description, GeneRatioNumeric))) +
+  geom_point(aes(size = Count, color = p.adjust)) +
+  scale_color_viridis_c(option = "magma", direction = -1) +
+  theme_minimal() +
+  labs(x = "Gene Ratio", y = "Biological Process", 
+       title = "Custom GO Enrichment Plot",
+       size = "Gene Count", color = "Adj. P-value")
+```
 
 
 ## PART4: 
