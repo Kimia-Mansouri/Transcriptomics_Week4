@@ -334,6 +334,8 @@ ggplot(ego_df, aes(x = GeneRatioNumeric, y = reorder(Description, GeneRatioNumer
   labs(x = "Gene Ratio", y = "Biological Process", 
        title = "Custom GO Enrichment Plot",
        size = "Gene Count", color = "Adj. P-value")
+
+
 ```
 
 
