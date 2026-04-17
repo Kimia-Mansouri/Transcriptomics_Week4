@@ -64,6 +64,10 @@ ncol(counts_master)
 write.csv(counts_master, "data/mock_vs_avr_vs_vir.csv", row.names = TRUE)
 ```
 
+```{r}
+counts_master <- read.csv("data/mock_vs_avr_vs_vir.csv", row.names = 1)
+```
+
 
 ## Creating the colData
 
