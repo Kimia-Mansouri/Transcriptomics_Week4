@@ -98,7 +98,7 @@ sig_6h_12h <- read.csv("data/data_kimia/sig_6h_12h_genes.csv", row.names = 1)
 ```{r}
 # 1. Extract the VST-transformed counts for your significant 1h vs 12h genes
 # Assuming your filtered object is named 'sig_1h_12h'
-plot_mat_12h <- assay(vsd2)[rownames(sig_1h_12h), ]
+plot_mat_12h <- assay(vsd2)[c(rownames(sig_1h_12h),row.names(sig_1h_6h)[-which(row.names(sig_1h_6h)%in%row.names(sig_1h_12h))]), ]
 
 # 2. Create the Heatmap
 pheatmap(plot_mat_12h, 
@@ -139,3 +139,218 @@ pheatmap(plot_mat_12h_6h,
          show_colnames = TRUE,
          main = "Significant Genes: 12h vs 6h")
 ```
+
+### **Bonus: The “Human Readable” Heatmap**
+
+#### 1h vs. 12h
+
+Found LHY.
+
+```{r}
+# 1. Map TAIR IDs to Symbols using the annotation database
+gene_symbols <- mapIds(org.At.tair.db, 
+                       keys = rownames(plot_mat_12h), 
+                       column = "SYMBOL", 
+                       keytype = "TAIR", 
+                       multiVals = "first")
+
+# 2. Replace the row names of your matrix
+# We use ifelse to keep the TAIR ID if a Symbol doesn't exist
+rownames(plot_mat_12h) <- ifelse(!is.na(gene_symbols), gene_symbols, rownames(plot_mat_12h))
+
+# 3. Now re-run your pheatmap() call with plot_mat_12h!
+pheatmap(plot_mat_12h, 
+         scale = "row", 
+         clustering_distance_rows = "euclidean",
+         clustering_method = "complete",
+         color = magma(100), 
+         show_colnames = TRUE,
+         main = "Significant Genes: 12h vs 1h")
+rownames(plot_mat_12h)
+```
+
+#### 1h vs. 6h 
+
+```{r}
+gene_symbols <- mapIds(org.At.tair.db, 
+                       keys = rownames(plot_mat_1h), 
+                       column = "SYMBOL", 
+                       keytype = "TAIR", 
+                       multiVals = "first")
+
+# 2. Replace the row names of your matrix
+# We use ifelse to keep the TAIR ID if a Symbol doesn't exist
+rownames(plot_mat_1h) <- ifelse(!is.na(gene_symbols), gene_symbols, rownames(plot_mat_1h))
+
+# 3. Now re-run your pheatmap() call with plot_mat_12h!
+pheatmap(plot_mat_1h)
+rownames(plot_mat_1h)
+```
+
+#### 6h vs. 12h
+
+```{r}
+gene_symbols <- mapIds(org.At.tair.db, 
+                       keys = rownames(plot_mat_12h_6h), 
+                       column = "SYMBOL", 
+                       keytype = "TAIR", 
+                       multiVals = "first")
+
+# 2. Replace the row names of your matrix
+# We use ifelse to keep the TAIR ID if a Symbol doesn't exist
+rownames(plot_mat_12h_6h) <- ifelse(!is.na(gene_symbols), gene_symbols, rownames(plot_mat_12h_6h))
+
+# 3. Now re-run your pheatmap() call with plot_mat_12h!
+pheatmap(plot_mat_12h_6h)
+rownames(plot_mat_12h_6h)
+```
+
+## **Part 3: Gene Ontology (GO) Enrichment**
+
+### **2. Running enrichGO**
+
+#### 1h vs. 12h
+
+```{r}
+sig_1h_12h_up <- sig_1h_12h %>%
+  as.data.frame() %>%
+  filter(padj < 0.2 & log2FoldChange >= 1) %>%
+  rownames()
+
+ego_1h_12h <- enrichGO(gene       = row.names (sig_1h_12h),
+                    OrgDb         = org.At.tair.db,
+                    keyType       = "TAIR",
+                    ont           = "BP", # Biological Process
+                    pAdjustMethod = "BH",
+                    pvalueCutoff  = 0.05,
+                    qvalueCutoff  = 0.1)
+
+# Visualize with a dotplot
+# dotplot naturally uses the colorblind-friendly scales from ggplot2
+enrichplot::dotplot(ego_1h_12h, showCategory=20) + ggtitle("GO Enrichment: 1h vs. 12h")
+ggplot2::ggsave(
+  filename = "data/data_kimia/dotplot_1h_12h.png",
+  plot = enrichplot::dotplot(ego_1h_12h, showCategory=20) + 
+    ggplot2::ggtitle("GO Enrichment: 1h vs. 12h"),
+  width = 8, 
+  height = 6
+)
+
+```
+
+#### 1h vs. 6h 
+
+```{r}
+ego_1h_6h <- enrichGO(gene       = row.names(sig_1h_6h),
+                    OrgDb         = org.At.tair.db,
+                    keyType       = "TAIR",
+                    ont           = "BP", # Biological Process
+                    pAdjustMethod = "BH",
+                    pvalueCutoff  = 0.05,
+                    qvalueCutoff  = 0.1)
+
+# Visualize with a dotplot
+# dotplot naturally uses the colorblind-friendly scales from ggplot2
+enrichplot::dotplot(ego_1h_6h, showCategory=20) + ggtitle("GO Enrichment: 1h vs. 6h")
+```
+
+#### 6h vs. 12h 
+
+```{r}
+sig_6h_12h_up <- sig_6h_12h %>%
+  as.data.frame() %>%
+  filter(padj < 0.2 & log2FoldChange >= 1) %>%
+  rownames()
+
+sig_6h_12h_up <- sig_6h_12h %>%
+  as.data.frame() %>%
+  filter(padj < 0.2 & log2FoldChange >= 1) %>%
+  rownames()
+
+ego_6h_12h <- enrichGO(gene       = row.names(sig_6h_12h),
+                    OrgDb         = org.At.tair.db,
+                    keyType       = "TAIR",
+                    ont           = "BP", # Biological Process
+                    pAdjustMethod = "BH",
+                    pvalueCutoff  = 0.05,
+                    qvalueCutoff  = 0.1)
+
+ego_6h_12h <- enrichGO(gene       = sig_6h_12h_up,
+                    OrgDb         = org.At.tair.db,
+                    keyType       = "TAIR",
+                    ont           = "BP", # Biological Process
+                    pAdjustMethod = "BH",
+                    pvalueCutoff  = 0.05,
+                    qvalueCutoff  = 0.1)
+
+# Visualize with a dotplot
+# dotplot naturally uses the colorblind-friendly scales from ggplot2
+enrichplot::dotplot(ego_6h_12h, showCategory=20) + ggtitle("GO Enrichment: 6h vs. 12h")
+```
+
+### **Pro Tip:** Custom Plotting with geom_point
+
+#### 1h vs. 12h 
+
+```{r}
+# 1. Convert to a dataframe
+ego_1h_12h_df <- as.data.frame(ego_1h_12h) %>%
+  head(20) %>%
+  # Secret trick: GeneRatio is a string "5/40". 
+  # We use parse/eval to turn it into a decimal number (0.125).
+  mutate(GeneRatioNumeric = sapply(GeneRatio, function(x) eval(parse(text=x))))
+
+# 2. Plot with geom_point
+ggplot(ego_1h_12h_df, aes(x = GeneRatioNumeric, y = reorder(Description, GeneRatioNumeric))) +
+  geom_point(aes(size = Count, color = p.adjust)) +
+  scale_color_viridis_c(option = "magma", direction = -1) +
+  theme_minimal() +
+  labs(x = "Gene Ratio", y = "Biological Process", 
+       title = "Custom GO Enrichment Plot",
+       size = "Gene Count", color = "Adj. P-value")
+```
+
+#### 1h vs. 6h 
+
+```{r}
+# 1. Convert to a dataframe
+ego_1h_6h_df <- as.data.frame(ego_1h_6h) %>%
+  head(20) %>%
+  # Secret trick: GeneRatio is a string "5/40". 
+  # We use parse/eval to turn it into a decimal number (0.125).
+  mutate(GeneRatioNumeric = sapply(GeneRatio, function(x) eval(parse(text=x))))
+
+# 2. Plot with geom_point
+ggplot(ego_1h_6h_df, aes(x = GeneRatioNumeric, y = reorder(Description, GeneRatioNumeric))) +
+  geom_point(aes(size = Count, color = p.adjust)) +
+  scale_color_viridis_c(option = "magma", direction = -1) +
+  theme_minimal() +
+  labs(x = "Gene Ratio", y = "Biological Process", 
+       title = "Custom GO Enrichment Plot",
+       size = "Gene Count", color = "Adj. P-value")
+```
+
+#### 6h vs. 12h 
+
+```{r}
+ego_6h_12h_df <- as.data.frame(ego_6h_12h) %>%
+  head(20) %>%
+  # Secret trick: GeneRatio is a string "5/40". 
+  # We use parse/eval to turn it into a decimal number (0.125).
+  mutate(GeneRatioNumeric = sapply(GeneRatio, function(x) eval(parse(text=x))))
+
+# 2. Plot with geom_point
+ggplot(ego_6h_12h_df, aes(x = GeneRatioNumeric, y = reorder(Description, GeneRatioNumeric))) +
+  geom_point(aes(size = Count, color = p.adjust)) +
+  scale_color_viridis_c(option = "magma", direction = -1) +
+  theme_minimal() +
+  labs(x = "Gene Ratio", y = "Biological Process", 
+       title = "Custom GO Enrichment Plot",
+       size = "Gene Count", color = "Adj. P-value")
+```
+
+## **Part 4: The Final Synthesis**
+
+## **Day 4 Wrap-Up: From Data to Knowledge**
+
+# **Final Submission**
