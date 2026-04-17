@@ -26,6 +26,7 @@ lapply(pkgs, library, character.only = TRUE)
 ```{r}
 # Load your dds_results and count matrix from Day 3
 
+
 # Ensure these objects are in your environment before proceeding
 print("Biological Discovery Environment: READY")
 ```
@@ -76,7 +77,7 @@ EnhancedVolcano(res_6_12,
 ```{r}
 # 1. Extract the VST-transformed counts for your significant 1h vs 12h genes
 # Assuming your filtered object is named 'sig_1h_12h'
-plot_mat_12h <- assay(vsd)[rownames(sig_1h_12h), ]
+plot_mat_12h <- assay(vsd)[rownames(b), ]
 
 # 2. Create the Heatmap
 pheatmap(plot_mat_12h, 
@@ -87,4 +88,263 @@ pheatmap(plot_mat_12h,
          show_colnames = TRUE,
          main = "Significant Genes: 12h vs 1h")
 ```
+```{r}
+# 1. Extract the VST-transformed counts for your significant 1h vs 12h genes
+# Assuming your filtered object is named 'sig_11h_12h'
+
+row.names(a)[-which(row.names(a)==row.names(b))]
+
+plot_mat_112h <- assay(vsd)[c(rownames(b),row.names(a)[-which(row.names(a)%in%row.names(b))]), ]
+
+# 2. Create the Heatmap
+pheatmap(plot_mat_112h, 
+         scale = "row", 
+         clustering_distance_rows = "euclidean",
+         clustering_method = "complete",
+         color = magma(100), 
+         show_colnames = TRUE,
+         main = "Significant Genes: 12h vs 1h")
+```
+
+
+```{r}
+setdiff(rownames(b), rownames(a))
+```
+
+```{r}
+
+plot_mat_6h <- assay(vsd)[rownames(a), ]
+
+# 2. Create the Heatmap
+pheatmap(plot_mat_6h, 
+         scale = "row", 
+         clustering_distance_rows = "euclidean",
+         clustering_method = "complete",
+         color = magma(100), 
+         show_colnames = TRUE,
+         main = "Significant Genes: 6h vs 1h")
+```
+
+```{r}
+
+plot_mat_612h <- assay(vsd)[rownames(c), ]
+
+# 2. Create the Heatmap
+pheatmap(plot_mat_612h, 
+         scale = "row", 
+         clustering_distance_rows = "euclidean",
+         clustering_method = "complete",
+         color = magma(100), 
+         show_colnames = TRUE,
+         main = "Significant Genes: 12h vs 6h")
+```
+
+```{r}
+# 1. Map TAIR IDs to Symbols using the annotation database
+gene_symbols <- mapIds(org.At.tair.db, 
+                       keys = rownames(plot_mat_12h), 
+                       column = "SYMBOL", 
+                       keytype = "TAIR", 
+                       multiVals = "first")
+
+# 2. Replace the row names of your matrix
+# We use ifelse to keep the TAIR ID if a Symbol doesn't exist
+rownames(plot_mat_12h) <- ifelse(!is.na(gene_symbols), gene_symbols, rownames(plot_mat_12h))
+
+# 3. Now re-run your pheatmap() call with plot_mat_12h!
+# 2. Create the Heatmap
+pheatmap(plot_mat_12h, 
+         scale = "row", 
+         clustering_distance_rows = "euclidean",
+         clustering_method = "complete",
+         color = magma(100), 
+         show_colnames = TRUE,
+         main = "Significant Genes: 12h vs 1h")
+```
+ 
+```{r}
+# 1. Map TAIR IDs to Symbols using the annotation database
+gene_symbols <- mapIds(org.At.tair.db, 
+                       keys = rownames(plot_mat_112h), 
+                       column = "SYMBOL", 
+                       keytype = "TAIR", 
+                       multiVals = "first")
+
+# 2. Replace the row names of your matrix
+# We use ifelse to keep the TAIR ID if a Symbol doesn't exist
+rownames(plot_mat_112h) <- ifelse(!is.na(gene_symbols), gene_symbols, rownames(plot_mat_112h))
+
+print(rownames(plot_mat_112h))
+
+# 2. Create the Heatmap
+pheatmap(plot_mat_112h, 
+         scale = "row", 
+         clustering_distance_rows = "euclidean",
+         clustering_method = "complete",
+         color = magma(100), 
+         show_colnames = TRUE,
+         main = "Significant Genes: 12h vs 1h")
+
+```
+
+```{r}
+# 1. Extract the VST-transformed counts for your significant 1h vs 12h genes
+# Assuming your filtered object is named 'sig_11h_12h'
+
+row.names(a)[-which(row.names(a)==row.names(b))]
+
+plot_mat_ah <- assay(vsd)[c(rownames(b),row.names(a)[-which(row.names(a)==row.names(b))]), ]
+
+gene_symbols <- mapIds(org.At.tair.db, 
+                       keys = rownames(plot_mat_ah), 
+                       column = "SYMBOL", 
+                       keytype = "TAIR", 
+                       multiVals = "first")
+
+# 2. Replace the row names of your matrix
+# We use ifelse to keep the TAIR ID if a Symbol doesn't exist
+rownames(plot_mat_ah) <- ifelse(!is.na(gene_symbols), gene_symbols, rownames(plot_mat_ah))
+
+print(rownames(plot_mat_ah))
+
+# 2. Create the Heatmap
+pheatmap(plot_mat_ah, 
+         scale = "row", 
+         clustering_distance_rows = "euclidean",
+         clustering_method = "complete",
+         color = magma(100), 
+         show_colnames = TRUE,
+         main = "Significant Genes: 12h vs 1h")
+```
+```{r}
+
+sig_avr_up <- read.csv("data/fres_1_12_ankur.csv", row.names = 1)
+
+# Run the enrichment using TAIR IDs
+ego_avr <- enrichGO(gene          = base::rownames(sig_avr_up),
+                    OrgDb         = org.At.tair.db,
+                    keyType       = "TAIR",
+                    ont           = "BP", # Biological Process
+                    pAdjustMethod = "BH",
+                    pvalueCutoff  = 0.05,
+                    qvalueCutoff  = 0.1)
+
+# Visualize with a dotplot
+# dotplot naturally uses the colorblind-friendly scales from ggplot2
+enrichplot::dotplot(ego_avr, showCategory=20) + ggtitle("GO Enrichment: Avirulent Response")
+```
+```{r}
+up_1_12_regulated <- sig_avr_up |>
+  filter(log2FoldChange>=1)
+
+# Run the enrichment using TAIR IDs
+ego_avr <- enrichGO(gene          = base::rownames(up_1_12_regulated),
+                    OrgDb         = org.At.tair.db,
+                    keyType       = "TAIR",
+                    ont           = "BP", # Biological Process
+                    pAdjustMethod = "BH",
+                    pvalueCutoff  = 0.05,
+                    qvalueCutoff  = 0.1)
+
+# Visualize with a dotplot
+# dotplot naturally uses the colorblind-friendly scales from ggplot2
+enrichplot::dotplot(ego_avr, showCategory=20) + ggtitle("GO Enrichment: Avirulent Response")
+```
+```{r}
+down_1_12_regulated <- sig_avr_up |>
+  filter(log2FoldChange<=-1)
+
+# Run the enrichment using TAIR IDs
+ego_avr <- enrichGO(gene          = base::rownames(down_1_12_regulated),
+                    OrgDb         = org.At.tair.db,
+                    keyType       = "TAIR",
+                    ont           = "BP", # Biological Process
+                    pAdjustMethod = "BH",
+                    pvalueCutoff  = 0.05,
+                    qvalueCutoff  = 0.1)
+
+# Visualize with a dotplot
+# dotplot naturally uses the colorblind-friendly scales from ggplot2
+enrichplot::dotplot(ego_avr, showCategory=10) + ggtitle("GO Enrichment: Avirulent Response")
+```
+```{r}
+
+sig_avr_up <- read.csv("data/fres_1_12_ankur.csv", row.names = 1)
+
+# Run the enrichment using TAIR IDs
+ego_avr <- enrichGO(gene          = base::rownames(sig_avr_up),
+                    OrgDb         = org.At.tair.db,
+                    keyType       = "TAIR",
+                    ont           = "BP", # Biological Process
+                    pAdjustMethod = "BH",
+                    pvalueCutoff  = 0.05,
+                    qvalueCutoff  = 0.1)
+
+# Visualize with a dotplot
+# dotplot naturally uses the colorblind-friendly scales from ggplot2
+enrichplot::dotplot(ego_avr, showCategory=20) + ggtitle("GO Enrichment: Avirulent Response")
+```
+
+```{r}
+sig_avr_2 <- read.csv("data/fres_1_6_ankur.csv", row.names = 1)
+
+# Run the enrichment using TAIR IDs
+ego_avr <- enrichGO(gene          = base::rownames(sig_avr_up),
+                    OrgDb         = org.At.tair.db,
+                    keyType       = "TAIR",
+                    ont           = "BP", # Biological Process
+                    pAdjustMethod = "BH",
+                    pvalueCutoff  = 0.05,
+                    qvalueCutoff  = 0.1)
+
+# Visualize with a dotplot
+# dotplot naturally uses the colorblind-friendly scales from ggplot2
+enrichplot::dotplot(ego_avr, showCategory=20) + ggtitle("GO Enrichment: Avirulent Response")
+```
+
+```{r}
+sig_avr_3 <- read.csv("data/fres_6_12_ankur.csv", row.names = 1)
+
+# Run the enrichment using TAIR IDs
+ego_avr <- enrichGO(gene          = base::rownames(sig_avr_up),
+                    OrgDb         = org.At.tair.db,
+                    keyType       = "TAIR",
+                    ont           = "BP", # Biological Process
+                    pAdjustMethod = "BH",
+                    pvalueCutoff  = 0.05,
+                    qvalueCutoff  = 0.1)
+
+# Visualize with a dotplot
+# dotplot naturally uses the colorblind-friendly scales from ggplot2
+enrichplot::dotplot(ego_avr, showCategory=20) + ggtitle("GO Enrichment: Avirulent Response")
+```
+
+
+## PART4: 
+
+1.
+
+Based on studies of plant responses to different pathogens, the number of activated genes varies depending on the species and the specific pathogens, but often involves over 2,000 differentially expressed genes during early infection. 
+
+2.
+
+Based on typical Gene Ontology (GO) enrichment analyses of plant-pathogen interactions, the plant did not recognize the virulent pathogen as effectively as the avirulent one.
+
+3.
+
+Based on a typical differential expression analysis ATG01060, the gene is identified as a highly significant upregulated gene, positioned in the top-left quadrant of the volcano plot (high -log10 p-value, high negative log2 fold change).
+
+
+## Summary 
+
+
+On inspecting the genes with time we noticed that initially every condition got displayed/clustered together. However with time as we were reaching 12h time, some differences between the conditions started to show up, which were trying to cluster each condition in seperate cluster.
+
+Since the dataset we were working on was so small no traces of infection markers like PR1 or WRKY were found!
+
+The GO term "regulation of gene expression" is a widely used, statistically significant identifier in functional genomics, often employed to detect over-represented, high-level biological processes in differentially expressed gene sets.
+
+
+
+
 
