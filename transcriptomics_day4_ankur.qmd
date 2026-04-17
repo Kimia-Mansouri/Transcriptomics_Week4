@@ -365,5 +365,10 @@ The GO term "regulation of gene expression" is a widely used, statistically sign
 
 
 
+```{r}
+# using this to save plot
+# ggsave("GoEnrichment_1h_12h.png", path = "figures/figures_ankur", width = 6, height = 4, dpi = 300)
+
+```
 
 
