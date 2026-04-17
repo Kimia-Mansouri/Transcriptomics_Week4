@@ -131,7 +131,7 @@ plot.phylo(as.phylo(clusters),
 
 ## **Part 5: The Main Event - Differential Expression**
 
-### **1. Running the Pipeline - our null hypothesis is that all genes are expressed the same.** 
+### **1. Running the Pipeline - our null hypothesis is that all genes are expressed the same.**
 
 ```{r}
 # Assign the output to a new object to keep your original dds safe
@@ -142,7 +142,7 @@ dds_results2 <- DESeq(dds2)
 
 ### **2. Extracting Specific Results**
 
-alpha is usually the p-value. Here alpha represents the your target **False Discovery Rate (FDR)**. The proportion of false positives among all significant results. 20% of our significant genes with (0.05% p value for being differentially expressed) might be false positives. Used the p-value to get significant ones and estimated the proportions of falsely discovered genes.
+alpha is usually the p-value. Here alpha represents the your target **False Discovery Rate (FDR)**. The proportion of false positives among all significant results. 20% of our significant genes with (0.05% p value for being deferentially expressed) might be false positives. Used the p-value to get significant ones and estimated the proportions of falsely discovered genes.
 
 ```{r}
 # Extract results for Avirulent vs. Mock
